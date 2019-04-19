@@ -2,6 +2,7 @@ package de.rnd7.mieletomqtt.miele;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 
 import org.json.JSONObject;
@@ -17,7 +18,7 @@ public class MieleDevice {
 	private final Duration remainingDuration;
 	private final JSONObject small;
 
-	public MieleDevice(final String id, final JSONObject data) {
+	public MieleDevice(final String id, final JSONObject data, final String timezone) {
 		this.id = id;
 		this.data = data;
 
@@ -34,7 +35,7 @@ public class MieleDevice {
 
 		this.small = new JSONObject();
 
-		final String timeCompleted = LocalDateTime.now().plus(this.remainingDuration)
+		final String timeCompleted = LocalDateTime.now().plus(this.remainingDuration).atZone(ZoneId.of(timezone))
 				.format(DateTimeFormatter.ofPattern("HH:mm"));
 
 		this.small.put("remainingDurationMinutes", this.remainingDuration.toMinutes());

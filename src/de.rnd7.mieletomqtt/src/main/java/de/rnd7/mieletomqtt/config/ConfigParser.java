@@ -33,6 +33,7 @@ public class ConfigParser {
 		config.setMieleClientSecret(jsonObject.getString("miele-client-secret"));
 		config.setMieleUsername(jsonObject.getString("miele-username"));
 		config.setMielePassword(jsonObject.getString("miele-password"));
+		config.setTimezone(jsonObject.getString("timezone"));
 
 		config.setMqttBroker(jsonObject.getString("mqtt-url"));
 		config.setPollingInterval(Duration.ofSeconds(jsonObject.getInt(MESSAGE_INTERVAL)));

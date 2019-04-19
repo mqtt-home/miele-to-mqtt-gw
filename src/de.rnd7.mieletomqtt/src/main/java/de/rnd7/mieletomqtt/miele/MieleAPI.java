@@ -34,11 +34,15 @@ public class MieleAPI {
 	private final String password;
 	private Token token;
 
-	public MieleAPI(final String clientId, final String clientSecret, final String username, final String password) {
+	private final String timezone;
+
+	public MieleAPI(final String clientId, final String clientSecret, final String username, final String password,
+			final String timezone) {
 		this.clientId = clientId;
 		this.clientSecret = clientSecret;
 		this.username = username;
 		this.password = password;
+		this.timezone = timezone;
 
 		this.updateToken();
 	}
@@ -54,7 +58,7 @@ public class MieleAPI {
 		try (InputStream in = connection.getInputStream()) {
 			final JSONObject devices = new JSONObject(IOUtils.toString(in, StandardCharsets.UTF_8));
 
-			return devices.keySet().stream().map(id -> new MieleDevice(id, devices.getJSONObject(id)))
+			return devices.keySet().stream().map(id -> new MieleDevice(id, devices.getJSONObject(id), this.timezone))
 					.collect(Collectors.toList());
 		}
 	}
@@ -71,8 +75,7 @@ public class MieleAPI {
 	private Token fetchToken(final String code) throws IOException {
 		try (CloseableHttpClient httpclient = HttpClients.createDefault()) {
 			final String request = String.format(
-					"client_id=%s" + "&client_secret=%s" + "&code=%s" + "&redirect_uri=%s"
-							+ "&grant_type=authorization_code" + "&state=token",
+					"client_id=%s&client_secret=%s&code=%s&redirect_uri=%s&grant_type=authorization_code&state=token",
 					this.clientId, this.clientSecret, code,
 					URLEncoder.encode("/v1/devices", StandardCharsets.UTF_8.name()));
 
@@ -90,7 +93,8 @@ public class MieleAPI {
 
 	private String fetchCode() throws IOException {
 		try (CloseableHttpClient httpclient = HttpClients.createDefault()) {
-			final String request = String.format("email=%s&password=%s&redirect_uri=%s&state=login&response_type=code&client_id=%s&vgInformationSelector=%s",
+			final String request = String.format(
+					"email=%s&password=%s&redirect_uri=%s&state=login&response_type=code&client_id=%s&vgInformationSelector=%s",
 					URLEncoder.encode(this.username, StandardCharsets.UTF_8.name()),
 					URLEncoder.encode(this.password, StandardCharsets.UTF_8.name()),
 					URLEncoder.encode("/v1/", StandardCharsets.UTF_8.name()), this.clientId, "de-de");

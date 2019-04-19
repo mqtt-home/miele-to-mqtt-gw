@@ -1,7 +1,7 @@
 version: '2'
 
 services:
-  speedportmqtt:
+  mielemqtt:
     hostname: mielemqtt
     image: pharndt/mielemqtt
     volumes:

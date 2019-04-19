@@ -13,6 +13,8 @@ public class Config {
 	private String mieleUsername;
 	private String mielePassword;
 
+	private String timezone;
+
 	public void setMqttBroker(final String mqttBroker) {
 		this.mqttBroker = mqttBroker;
 	}
@@ -67,6 +69,14 @@ public class Config {
 
 	public String getMielePassword() {
 		return this.mielePassword;
+	}
+
+	public void setTimezone(final String timezone) {
+		this.timezone = timezone;
+	}
+
+	public String getTimezone() {
+		return this.timezone;
 	}
 
 }

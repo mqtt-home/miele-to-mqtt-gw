@@ -6,6 +6,8 @@
 	"miele-username": "miele_at_home_user@example.com",
 	"miele-password": "miele_at_home_password",
 
+	"timezone": "GMT+1",
+
 	"message-interval": 30,
 	"full-message-topic": "home/miele"
 }
