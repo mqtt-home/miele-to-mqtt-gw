@@ -2,6 +2,8 @@ version: '2'
 
 services:
   mielemqtt:
+    environment:
+      TZ: "Europe/Berlin"
     hostname: mielemqtt
     image: pharndt/mielemqtt
     volumes:
