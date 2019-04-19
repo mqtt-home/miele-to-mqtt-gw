@@ -1,0 +1,11 @@
+{
+	"mqtt-url": "tcp://192.168.2.2:1883",
+	
+	"miele-client-id": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+	"miele-client-secret": "12345678901234567890123456789012",
+	"miele-username": "miele_at_home_user@example.com",
+	"miele-password": "miele_at_home_password",
+
+	"message-interval": 30,
+	"full-message-topic": "home/miele"
+}

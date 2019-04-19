@@ -1,0 +1,9 @@
+version: '2'
+
+services:
+  speedportmqtt:
+    hostname: mielemqtt
+    image: pharndt/mielemqtt
+    volumes:
+     - ./config:/var/lib/miele-to-mqtt-gw:ro
+    restart: always 
