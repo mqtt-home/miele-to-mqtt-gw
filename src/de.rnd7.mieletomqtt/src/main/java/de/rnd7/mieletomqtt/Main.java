@@ -32,7 +32,7 @@ public class Main {
 		this.config = config;
 		this.eventBus.register(new GwMqttClient(config));
 		this.mieleAPI = new MieleAPI(this.config.getMieleClientId(), this.config.getMieleClientSecret(),
-				this.config.getMieleUsername(), this.config.getMielePassword(), config.getTimezone());
+				this.config.getMieleUsername(), this.config.getMielePassword());
 
 		try {
 			final ScheduledExecutorService executor = Executors.newScheduledThreadPool(2);

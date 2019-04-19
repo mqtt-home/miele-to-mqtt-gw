@@ -34,15 +34,11 @@ public class MieleAPI {
 	private final String password;
 	private Token token;
 
-	private final String timezone;
-
-	public MieleAPI(final String clientId, final String clientSecret, final String username, final String password,
-			final String timezone) {
+	public MieleAPI(final String clientId, final String clientSecret, final String username, final String password) {
 		this.clientId = clientId;
 		this.clientSecret = clientSecret;
 		this.username = username;
 		this.password = password;
-		this.timezone = timezone;
 
 		this.updateToken();
 	}
@@ -58,7 +54,7 @@ public class MieleAPI {
 		try (InputStream in = connection.getInputStream()) {
 			final JSONObject devices = new JSONObject(IOUtils.toString(in, StandardCharsets.UTF_8));
 
-			return devices.keySet().stream().map(id -> new MieleDevice(id, devices.getJSONObject(id), this.timezone))
+			return devices.keySet().stream().map(id -> new MieleDevice(id, devices.getJSONObject(id)))
 					.collect(Collectors.toList());
 		}
 	}
