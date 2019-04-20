@@ -15,3 +15,7 @@ copy the `config-example.json` to `/production/config/config.json`
 cd ./production
 docker-compose up -d
 ```
+
+## openHAB configuration
+
+see [openHAB example](openHAB.md)
