@@ -23,8 +23,8 @@ information.
 
 ## Example full message
 
-The full message is exactly the message provided by Miele without any changes.
-see [fullmessage-example](fullmessage-example.md)
+The full message is exactly the message provided by Miele without any changes.  
+See [fullmessage-example](fullmessage-example.md)
 
 # build
 
