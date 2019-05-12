@@ -5,6 +5,10 @@ Convert the miele@home data to mqtt messages
 This application will post two MQTT messages for each connected device.
 One short message and a full message.
 
+## Miele REST API state
+
+Please note that the Miele REST API (public API - https://www.miele.com/developer/swagger-ui/index.html) will currently not work. The token request will complete sucessfully but the REST call using bearer authentication fails with 401. Miele is informed about the issue.
+
 ## Example short message
 
 The short message is already parsed/interpreted and contatins only the most relevant 
