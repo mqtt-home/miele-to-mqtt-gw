@@ -44,7 +44,7 @@ public class MieleAPI {
 	}
 
 	public List<MieleDevice> fetchDevices() throws IOException {
-		final URL url = new URL("https://api.mcs3.miele.com/v1/devices/?language=en");
+		final URL url = new URL("https://api.mcs3.miele.com/v1/devices/");
 		final HttpURLConnection connection = (HttpURLConnection) url.openConnection();
 		connection.setRequestMethod("GET");
 
