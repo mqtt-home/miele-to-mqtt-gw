@@ -16,3 +16,4 @@ config.json
 .recommenders
 .sonarlint
 .settings
+.DS_Store
