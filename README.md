@@ -26,6 +26,31 @@ information.
 The full message is exactly the message provided by Miele without any changes.  
 See [fullmessage-example](fullmessage-example.md)
 
+## Example configuration
+```json
+{
+	"mqtt": {
+		"url": "tcp://192.168.2.2:1883",
+		"client-id": "miele-mqtt-gw",
+		"username": "username",
+		"password": "password",
+		"retain": true,
+
+		"message-interval": 30,
+		"full-message-topic": "home/miele"
+	},
+
+	"miele": {
+		"client-id": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+		"client-secret": "12345678901234567890123456789012",
+		"username": "miele_at_home_user@example.com",
+		"password": "miele_at_home_password"
+	},
+
+	"timezone": "GMT+1"
+}
+```
+
 # build
 
 build the docker container using `build.sh`
