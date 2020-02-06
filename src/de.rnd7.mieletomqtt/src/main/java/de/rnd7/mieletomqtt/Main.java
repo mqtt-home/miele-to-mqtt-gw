@@ -6,6 +6,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
+import de.rnd7.mieletomqtt.config.ConfigMiele;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,12 +32,14 @@ public class Main {
 	public Main(final Config config) {
 		this.config = config;
 		this.eventBus.register(new GwMqttClient(config));
-		this.mieleAPI = new MieleAPI(this.config.getMieleClientId(), this.config.getMieleClientSecret(),
-				this.config.getMieleUsername(), this.config.getMielePassword());
+
+		ConfigMiele miele = config.getMiele();
+		this.mieleAPI = new MieleAPI(miele.getClientId(), miele.getClientSecret(),
+				miele.getUsername(), miele.getPassword());
 
 		try {
 			final ScheduledExecutorService executor = Executors.newScheduledThreadPool(2);
-			executor.scheduleAtFixedRate(this::exec, 0, config.getPollingInterval().getSeconds(), TimeUnit.SECONDS);
+			executor.scheduleAtFixedRate(this::exec, 0, config.getMqtt().getPollingInterval().getSeconds(), TimeUnit.SECONDS);
 			executor.scheduleAtFixedRate(this.mieleAPI::updateToken, 2, 2, TimeUnit.HOURS);
 
 			while (true) {

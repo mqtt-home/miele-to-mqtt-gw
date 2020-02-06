@@ -2,6 +2,7 @@ package de.rnd7.mieletomqtt.mqtt;
 
 import java.util.Optional;
 
+import de.rnd7.mieletomqtt.config.ConfigMqtt;
 import org.eclipse.paho.client.mqttv3.MqttClient;
 import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
 import org.eclipse.paho.client.mqttv3.MqttException;
@@ -16,27 +17,33 @@ import de.rnd7.mieletomqtt.config.Config;
 
 public class GwMqttClient {
 	private static final int QOS = 2;
-	private static final String CLIENTID = "speedport-mqtt-gw";
+	private static final String CLIENT_ID = "miele-mqtt-gw";
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(GwMqttClient.class);
 
 	private final MemoryPersistence persistence = new MemoryPersistence();
 	private final Object mutex = new Object();
-	private final Config config;
+	private final ConfigMqtt config;
 
 	private Optional<MqttClient> client;
 
 	public GwMqttClient(final Config config) {
-		this.config = config;
+		this.config = config.getMqtt();
 		this.client = this.connect();
 	}
 
 	private Optional<MqttClient> connect() {
 		try {
 			LOGGER.info("Connecting MQTT client");
-			final MqttClient result = new MqttClient(this.config.getMqttBroker(), CLIENTID, this.persistence);
+			final MqttClient result = new MqttClient(this.config.getUrl(),
+					this.config.getClientId().orElse(CLIENT_ID),
+					this.persistence);
+
 			final MqttConnectOptions connOpts = new MqttConnectOptions();
 			connOpts.setCleanSession(true);
+			config.getUsername().ifPresent(connOpts::setUserName);
+			config.getPassword().map(String::toCharArray).ifPresent(connOpts::setPassword);
+
 			result.connect(connOpts);
 
 			return Optional.of(result);
@@ -56,7 +63,7 @@ public class GwMqttClient {
 				try {
 					final MqttMessage message = new MqttMessage(value.getBytes());
 					message.setQos(QOS);
-					message.setRetained(true);
+					message.setRetained(config.isRetain());
 					mqttClient.publish(topic, message);
 				} catch (final MqttException e) {
 					LOGGER.error(e.getMessage(), e);

@@ -12,8 +12,11 @@ buildNumber.properties
 !/.mvn/wrapper/maven-wrapper.jar
 
 config.json
+config-auth.json
 .metadata
 .recommenders
 .sonarlint
 .settings
 .DS_Store
+
+.idea
