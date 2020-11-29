@@ -1,4 +1,5 @@
-FROM openjdk:15-alpine
+# ---- Build ----
+FROM openjdk:15-alpine as build
 
 LABEL maintainer="Philipp Arndt <2f.mail@gmx.de>"
 LABEL version="1.0"
@@ -15,6 +16,11 @@ RUN apk update --no-cache && apk add --no-cache maven
 COPY src /opt/miele-to-mqtt-gw
 
 RUN mvn install assembly:single
-RUN cp ./de.rnd7.mieletomqtt/target/miele-to-mqtt-gw.jar ./miele-to-mqtt-gw.jar
 
-CMD java -jar miele-to-mqtt-gw.jar /var/lib/miele-to-mqtt-gw/config.json
+# ---- Prod ----
+FROM openjdk:15-alpine
+RUN mkdir /opt/app
+WORKDIR /opt/app
+COPY --from=build /opt/miele-to-mqtt-gw/de.rnd7.mieletomqtt/target/miele-to-mqtt-gw.jar .
+COPY logback.xml .
+CMD java -Dlogback.configurationFile=./miele-to-mqtt-gw.jar/logback.xml -jar ./miele-to-mqtt-gw.jar /var/lib/miele-to-mqtt-gw/config.json

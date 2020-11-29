@@ -65,6 +65,11 @@ cd ./production
 docker-compose up -d
 ```
 
+## Logging
+
+When you like to use a custom logging configuration, you need to update
+the command in the compose file and use a custom logback.xml.
+
 ## openHAB configuration
 
 see [openHAB example](openHAB.md)
