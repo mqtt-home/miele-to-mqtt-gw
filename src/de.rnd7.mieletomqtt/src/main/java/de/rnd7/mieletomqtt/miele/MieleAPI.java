@@ -44,15 +44,15 @@ public class MieleAPI {
 	}
 
 	public List<MieleDevice> fetchDevices() throws IOException {
-		final URL url = new URL("https://api.mcs3.miele.com/v1/devices/");
-		final HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+		final var url = new URL("https://api.mcs3.miele.com/v1/devices/");
+		final var connection = (HttpURLConnection) url.openConnection();
 		connection.setRequestMethod("GET");
 
 		connection.setRequestProperty("Content-Type", "application/json");
 		connection.setRequestProperty("Authorization", "Bearer " + this.token.getAccessToken());
 
-		try (InputStream in = connection.getInputStream()) {
-			final JSONObject devices = new JSONObject(IOUtils.toString(in, StandardCharsets.UTF_8));
+		try (var in = connection.getInputStream()) {
+			final var devices = new JSONObject(IOUtils.toString(in, StandardCharsets.UTF_8));
 
 			return devices.keySet().stream().map(id -> new MieleDevice(id, devices.getJSONObject(id)))
 					.collect(Collectors.toList());
@@ -61,7 +61,7 @@ public class MieleAPI {
 
 	public void updateToken() {
 		try {
-			final String code = this.fetchCode();
+			final var code = this.fetchCode();
 			this.token = this.fetchToken(code);
 		} catch (final IOException e) {
 			LOGGER.error("Error while fetching token", e);
@@ -69,17 +69,17 @@ public class MieleAPI {
 	}
 
 	private Token fetchToken(final String code) throws IOException {
-		try (CloseableHttpClient httpclient = HttpClients.createDefault()) {
+		try (var httpclient = HttpClients.createDefault()) {
 			final String request = String.format(
 					"client_id=%s&client_secret=%s&code=%s&redirect_uri=%s&grant_type=authorization_code&state=token",
 					this.clientId, this.clientSecret, code,
 					URLEncoder.encode("/v1/devices", StandardCharsets.UTF_8.name()));
 
-			final HttpPost post = new HttpPost("https://api.mcs3.miele.com/thirdparty/token");
+			final var post = new HttpPost("https://api.mcs3.miele.com/thirdparty/token");
 			post.setHeader("Content-Type", "application/x-www-form-urlencoded");
 			post.setEntity(new StringEntity(request));
 
-			try (CloseableHttpResponse response = httpclient.execute(post)) {
+			try (var response = httpclient.execute(post)) {
 				final String page = EntityUtils.toString(response.getEntity(), StandardCharsets.UTF_8);
 
 				return Token.from(new JSONObject(page));
@@ -88,24 +88,24 @@ public class MieleAPI {
 	}
 
 	private String fetchCode() throws IOException {
-		try (CloseableHttpClient httpclient = HttpClients.createDefault()) {
+		try (var httpclient = HttpClients.createDefault()) {
 			final String request = String.format(
 					"email=%s&password=%s&redirect_uri=%s&state=login&response_type=code&client_id=%s&vgInformationSelector=%s",
 					URLEncoder.encode(this.username, StandardCharsets.UTF_8.name()),
 					URLEncoder.encode(this.password, StandardCharsets.UTF_8.name()),
 					URLEncoder.encode("/v1/", StandardCharsets.UTF_8.name()), this.clientId, "de-de");
 
-			final HttpPost post = new HttpPost("https://api.mcs3.miele.com/oauth/auth");
+			final var post = new HttpPost("https://api.mcs3.miele.com/oauth/auth");
 			post.setHeader("Content-Type", "application/x-www-form-urlencoded");
 			post.setEntity(new StringEntity(request));
 
-			try (CloseableHttpResponse response = httpclient.execute(post)) {
+			try (var response = httpclient.execute(post)) {
 
-				final Header header = response.getHeaders("Location")[0];
-				final String value = header.getValue();
+				final var header = response.getHeaders("Location")[0];
+				final var value = header.getValue();
 
-				final Pattern pattern = Pattern.compile("code=([a-z0-9_]+)", Pattern.CASE_INSENSITIVE);
-				final Matcher matcher = pattern.matcher(value);
+				final var pattern = Pattern.compile("code=([a-z0-9_]+)", Pattern.CASE_INSENSITIVE);
+				final var matcher = pattern.matcher(value);
 
 				if (matcher.find()) {
 					return matcher.group(1);

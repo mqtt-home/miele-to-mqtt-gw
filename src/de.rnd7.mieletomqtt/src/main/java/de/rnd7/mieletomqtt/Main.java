@@ -22,28 +22,25 @@ public class Main {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(Main.class);
 
-	private final Config config;
-
 	private final EventBus eventBus = new EventBus();
 
 	private final MieleAPI mieleAPI;
 
 	@SuppressWarnings("squid:S2189")
 	public Main(final Config config) {
-		this.config = config;
 		this.eventBus.register(new GwMqttClient(config));
 
-		ConfigMiele miele = config.getMiele();
+		final var miele = config.getMiele();
 		this.mieleAPI = new MieleAPI(miele.getClientId(), miele.getClientSecret(),
 				miele.getUsername(), miele.getPassword());
 
 		try {
-			final ScheduledExecutorService executor = Executors.newScheduledThreadPool(2);
+			final var executor = Executors.newScheduledThreadPool(2);
 			executor.scheduleAtFixedRate(this::exec, 0, config.getMqtt().getPollingInterval().getSeconds(), TimeUnit.SECONDS);
 			executor.scheduleAtFixedRate(this.mieleAPI::updateToken, 2, 2, TimeUnit.HOURS);
 
 			while (true) {
-				this.sleep();
+				Thread.sleep(100);
 			}
 		} catch (final Exception e) {
 			LOGGER.error(e.getMessage(), e);
@@ -52,21 +49,12 @@ public class Main {
 
 	private void exec() {
 		try {
-			for (final MieleDevice mieleDevice : this.mieleAPI.fetchDevices()) {
-				this.eventBus.post(mieleDevice.toFullMessage());
-				this.eventBus.post(mieleDevice.toSmallMessage());
+			for (final var device : this.mieleAPI.fetchDevices()) {
+				this.eventBus.post(device.toFullMessage());
+				this.eventBus.post(device.toSmallMessage());
 			}
 		} catch (final Exception e) {
 			LOGGER.error(e.getMessage(), e);
-		}
-	}
-
-	private void sleep() {
-		try {
-			Thread.sleep(100);
-		} catch (final InterruptedException e) {
-			LOGGER.debug(e.getMessage(), e);
-			Thread.currentThread().interrupt();
 		}
 	}
 

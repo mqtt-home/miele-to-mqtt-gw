@@ -21,13 +21,13 @@ public class MieleDevice {
 		this.id = id;
 		this.data = data;
 
-		final JSONObject deviceState = data.getJSONObject("state");
-		final JSONObject deviceStateProgramPhase = deviceState.getJSONObject("programPhase");
+		final var deviceState = data.getJSONObject("state");
+		final var deviceStateProgramPhase = deviceState.getJSONObject("programPhase");
 
 		this.phaseId = deviceStateProgramPhase.getInt("value_raw");
 		this.phase = ProgramPhase.fromId(this.phaseId);
 
-		final JSONObject deviceStateStatus = deviceState.getJSONObject("status");
+		final var deviceStateStatus = deviceState.getJSONObject("status");
 
 		this.state = State.fromId(deviceStateStatus.getInt("value_raw"));
 		this.remainingDuration = DurationParser.parse(deviceState.getJSONArray("remainingTime"));

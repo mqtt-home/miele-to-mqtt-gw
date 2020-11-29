@@ -20,3 +20,4 @@ config-auth.json
 .DS_Store
 
 .idea
+*.iml

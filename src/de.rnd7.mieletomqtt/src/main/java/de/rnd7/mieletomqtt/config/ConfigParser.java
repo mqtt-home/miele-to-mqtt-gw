@@ -18,7 +18,7 @@ public class ConfigParser {
 	}
 
 	public static Config parse(final File file) throws IOException {
-		try (InputStream in = new FileInputStream(file)) {
+		try (var in = new FileInputStream(file)) {
 			return parse(in);
 		}
 	}
@@ -26,7 +26,7 @@ public class ConfigParser {
 	public static Config parse(final InputStream in) throws IOException {
 		final String json = IOUtils.toString(in, StandardCharsets.UTF_8);
 
-		final Gson gson = new GsonBuilder()
+		final var gson = new GsonBuilder()
 				.registerTypeAdapter(Duration.class, new DurationDeserializer())
 				.create();
 

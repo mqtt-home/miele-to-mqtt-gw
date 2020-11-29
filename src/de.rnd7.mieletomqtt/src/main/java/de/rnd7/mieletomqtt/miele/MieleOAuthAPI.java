@@ -61,21 +61,21 @@ public class MieleOAuthAPI {
 
 	private Credential authorize(final String apiKey, final String apiSecret) throws IOException {
 		// set up authorization code flow
-		final AuthorizationCodeFlow flow = new AuthorizationCodeFlow.Builder(
+		final var flow = new AuthorizationCodeFlow.Builder(
 				BearerToken.authorizationHeaderAccessMethod(), HTTP_TRANSPORT, JSON_FACTORY,
 				new GenericUrl(TOKEN_SERVER_URL), new ClientParametersAuthentication(apiKey, apiSecret), apiKey,
 				AUTHORIZATION_SERVER_URL).setScopes(Arrays.asList(SCOPE)).setDataStoreFactory(this.dataStoreFactory)
 						.build();
 		// authorize
-		final LocalServerReceiver receiver = new LocalServerReceiver.Builder().setHost(DOMAIN).setPort(PORT).build();
+		final var receiver = new LocalServerReceiver.Builder().setHost(DOMAIN).setPort(PORT).build();
 		return new AuthorizationCodeInstalledApp(flow, receiver).authorize("user");
 	}
 
 	public List<MieleDevice> fetchDevices() throws IOException {
-		final GenericUrl url = new GenericUrl("https://api.mcs3.miele.com/v1/devices");
-		final HttpRequest request = this.requestFactory.buildGetRequest(url);
-		final HttpResponse response = request.execute();
-		final JSONObject devices = new JSONObject(response.parseAsString());
+		final var url = new GenericUrl("https://api.mcs3.miele.com/v1/devices");
+		final var request = this.requestFactory.buildGetRequest(url);
+		final var response = request.execute();
+		final var devices = new JSONObject(response.parseAsString());
 		return devices.keySet().stream().map(id -> new MieleDevice(id, devices.getJSONObject(id)))
 				.collect(Collectors.toList());
 	}
