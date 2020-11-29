@@ -55,8 +55,8 @@ public class GwMqttClient {
 
 	private void publish(final String topic, final String value) {
 		synchronized (this.mutex) {
-			LOGGER.debug("publishing {} = {}", topic, valueString);
-			
+			LOGGER.debug("publishing {} = {}", topic, value);
+
 			if (!this.client.filter(MqttClient::isConnected).isPresent()) {
 				this.client = this.connect();
 			}
