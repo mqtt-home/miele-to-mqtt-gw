@@ -15,7 +15,6 @@ import org.json.JSONObject;
 public class ConfigParser {
 
 	private ConfigParser() {
-
 	}
 
 	public static Config parse(final File file) throws IOException {
@@ -25,11 +24,9 @@ public class ConfigParser {
 	}
 
 	public static Config parse(final InputStream in) throws IOException {
-		final Config config = new Config();
+		final String json = IOUtils.toString(in, StandardCharsets.UTF_8);
 
-		String json = IOUtils.toString(in, StandardCharsets.UTF_8);
-
-		Gson gson = new GsonBuilder()
+		final Gson gson = new GsonBuilder()
 				.registerTypeAdapter(Duration.class, new DurationDeserializer())
 				.create();
 
