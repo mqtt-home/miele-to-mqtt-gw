@@ -1,4 +1,4 @@
-FROM openjdk:8-jdk-alpine
+FROM openjdk:15-alpine
 
 LABEL maintainer="Philipp Arndt <2f.mail@gmx.de>"
 LABEL version="1.0"
