@@ -1,5 +1,5 @@
 # ---- Build ----
-FROM gradle:jdk15 as build
+FROM gradle:jdk14 as build
 
 LABEL maintainer="Philipp Arndt <2f.mail@gmx.de>"
 LABEL version="1.0"
@@ -20,7 +20,7 @@ COPY src /opt/miele-to-mqtt-gw
 RUN mvn install assembly:single
 
 # ---- Prod ----
-FROM gradle:jre15
+FROM gradle:jre14
 RUN mkdir /opt/app
 WORKDIR /opt/app
 COPY --from=build /opt/miele-to-mqtt-gw/de.rnd7.mieletomqtt/target/miele-to-mqtt-gw.jar .
