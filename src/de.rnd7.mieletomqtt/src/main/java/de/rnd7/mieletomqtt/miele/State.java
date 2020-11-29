@@ -32,7 +32,7 @@ public enum State {
 	
 	private int id;
 
-	private State(int id) {
+	State(int id) {
 		this.id = id;
 	}
 

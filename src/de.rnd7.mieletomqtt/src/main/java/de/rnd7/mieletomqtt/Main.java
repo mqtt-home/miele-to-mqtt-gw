@@ -3,10 +3,8 @@ package de.rnd7.mieletomqtt;
 import java.io.File;
 import java.io.IOException;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-import de.rnd7.mieletomqtt.config.ConfigMiele;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -15,7 +13,6 @@ import com.google.common.eventbus.EventBus;
 import de.rnd7.mieletomqtt.config.Config;
 import de.rnd7.mieletomqtt.config.ConfigParser;
 import de.rnd7.mieletomqtt.miele.MieleAPI;
-import de.rnd7.mieletomqtt.miele.MieleDevice;
 import de.rnd7.mieletomqtt.mqtt.GwMqttClient;
 
 public class Main {

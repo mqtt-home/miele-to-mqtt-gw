@@ -1,9 +1,5 @@
 package de.rnd7.mieletomqtt.config;
 
-import com.google.gson.annotations.SerializedName;
-
-import java.time.Duration;
-
 public class Config {
 
 	private ConfigMqtt mqtt;
