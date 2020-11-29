@@ -55,6 +55,8 @@ public class GwMqttClient {
 
 	private void publish(final String topic, final String value) {
 		synchronized (this.mutex) {
+			LOGGER.debug("publishing {} = {}", topic, valueString);
+			
 			if (!this.client.filter(MqttClient::isConnected).isPresent()) {
 				this.client = this.connect();
 			}
@@ -76,9 +78,6 @@ public class GwMqttClient {
 	public void publish(final Message message) {
 		final String topic = this.config.getFullMessageTopic() + "/" + message.getTopic();
 		final String valueString = message.getJson().toString();
-
-		LOGGER.info("{} = {}", topic, valueString);
-
 		this.publish(topic, valueString);
 	}
 
