@@ -1,5 +1,5 @@
 # ---- Build ----
-FROM openjdk:15-alpine as build
+FROM gradle:jdk15 as build
 
 LABEL maintainer="Philipp Arndt <2f.mail@gmx.de>"
 LABEL version="1.0"
@@ -11,14 +11,16 @@ ENV TERM xterm
 
 WORKDIR /opt/miele-to-mqtt-gw
 
-RUN apk update --no-cache && apk add --no-cache maven
+RUN apt-get update && apt-get install -y \
+  maven \
+  && rm -rf /var/lib/apt/lists/*
 
 COPY src /opt/miele-to-mqtt-gw
 
 RUN mvn install assembly:single
 
 # ---- Prod ----
-FROM openjdk:15-alpine
+FROM gradle:jre15
 RUN mkdir /opt/app
 WORKDIR /opt/app
 COPY --from=build /opt/miele-to-mqtt-gw/de.rnd7.mieletomqtt/target/miele-to-mqtt-gw.jar .
