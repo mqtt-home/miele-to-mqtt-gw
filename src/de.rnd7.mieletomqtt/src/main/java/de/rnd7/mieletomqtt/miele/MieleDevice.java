@@ -34,15 +34,29 @@ public class MieleDevice {
 
 		this.small = new JSONObject();
 
-		final String timeCompleted = LocalDateTime.now().plus(this.remainingDuration)
-				.format(DateTimeFormatter.ofPattern("HH:mm"));
+		if (this.state.equals(State.OFF)) {
+			final String timeCompleted = LocalDateTime.now()
+					.format(DateTimeFormatter.ofPattern("HH:mm"));
 
-		this.small.put("remainingDurationMinutes", this.remainingDuration.toMinutes());
-		this.small.put("remainingDuration", formatDuration(this.remainingDuration));
-		this.small.put("timeCompleted", timeCompleted);
-		this.small.put("phaseId", this.phaseId);
-		this.small.put("phase", this.phase);
-		this.small.put("state", this.state);
+			this.small.put("remainingDurationMinutes", 0);
+			this.small.put("remainingDuration", formatDuration(Duration.ZERO));
+			this.small.put("timeCompleted", timeCompleted);
+			this.small.put("phaseId", this.phaseId);
+			this.small.put("phase", this.phase);
+			this.small.put("state", this.state);
+		}
+		else {
+			final String timeCompleted = LocalDateTime.now().plus(this.remainingDuration)
+					.format(DateTimeFormatter.ofPattern("HH:mm"));
+
+			this.small.put("remainingDurationMinutes", this.remainingDuration.toMinutes());
+			this.small.put("remainingDuration", formatDuration(this.remainingDuration));
+			this.small.put("timeCompleted", timeCompleted);
+			this.small.put("phaseId", this.phaseId);
+			this.small.put("phase", this.phase);
+			this.small.put("state", this.state);
+		}
+
 	}
 
 	private static String formatDuration(final Duration duration) {
