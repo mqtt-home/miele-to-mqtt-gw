@@ -21,7 +21,7 @@ RUN mvn install assembly:single
 FROM openjdk:8-jdk-alpine
 RUN mkdir /opt/app
 WORKDIR /opt/app
-COPY --from=build /opt/miele-to-mqtt-gw/de.rnd7.mieletomqtt/target/miele-to-mqtt-gw.jar .
+COPY --from=builder /opt/miele-to-mqtt-gw/de.rnd7.mieletomqtt/target/miele-to-mqtt-gw.jar .
 COPY logback.xml .
 
 ENV LOGBACK_XML ./miele-to-mqtt-gw.jar/logback.xml
