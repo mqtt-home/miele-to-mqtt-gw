@@ -1,5 +1,5 @@
 # ---- Build ----
-FROM maven:3.6.3-adoptopenjdk-15 as build
+FROM openjdk:8-jdk-alpine as builder
 
 LABEL maintainer="Philipp Arndt <2f.mail@gmx.de>"
 LABEL version="1.0"
@@ -16,7 +16,7 @@ COPY src /opt/miele-to-mqtt-gw
 RUN mvn install assembly:single
 
 # ---- Prod ----
-FROM maven:3.6.3-adoptopenjdk-15
+FROM openjdk:8-jdk-alpine
 RUN mkdir /opt/app
 WORKDIR /opt/app
 COPY --from=build /opt/miele-to-mqtt-gw/de.rnd7.mieletomqtt/target/miele-to-mqtt-gw.jar .
