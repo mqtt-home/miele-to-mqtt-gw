@@ -4,6 +4,7 @@ services:
   mielemqtt:
     environment:
       TZ: "Europe/Berlin"
+      LOGBACK_XML: /var/lib/miele-to-mqtt-gw/logback.xml
     hostname: mielemqtt
     image: pharndt/mielemqtt
     volumes:

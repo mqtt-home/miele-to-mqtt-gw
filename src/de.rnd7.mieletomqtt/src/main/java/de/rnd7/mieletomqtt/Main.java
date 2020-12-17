@@ -2,9 +2,14 @@ package de.rnd7.mieletomqtt;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.List;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
+import de.rnd7.mieletomqtt.config.ConfigMiele;
+import de.rnd7.mieletomqtt.config.ConfigMqtt;
+import de.rnd7.mieletomqtt.miele.MieleDevice;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -25,14 +30,17 @@ public class Main {
 
 	@SuppressWarnings("squid:S2189")
 	public Main(final Config config) {
+		LOGGER.debug("Debug enabled");
+		LOGGER.info("Info enabled");
+
 		this.eventBus.register(new GwMqttClient(config));
 
-		final var miele = config.getMiele();
+		final ConfigMiele miele = config.getMiele();
 		this.mieleAPI = new MieleAPI(miele.getClientId(), miele.getClientSecret(),
 				miele.getUsername(), miele.getPassword());
 
 		try {
-			final var executor = Executors.newScheduledThreadPool(2);
+			final ScheduledExecutorService executor = Executors.newScheduledThreadPool(2);
 			executor.scheduleAtFixedRate(this::exec, 0, config.getMqtt().getPollingInterval().getSeconds(), TimeUnit.SECONDS);
 			executor.scheduleAtFixedRate(this.mieleAPI::updateToken, 2, 2, TimeUnit.HOURS);
 
@@ -46,7 +54,7 @@ public class Main {
 
 	private void exec() {
 		try {
-			for (final var device : this.mieleAPI.fetchDevices()) {
+			for (final MieleDevice device : this.mieleAPI.fetchDevices()) {
 				this.eventBus.post(device.toFullMessage());
 				this.eventBus.post(device.toSmallMessage());
 			}

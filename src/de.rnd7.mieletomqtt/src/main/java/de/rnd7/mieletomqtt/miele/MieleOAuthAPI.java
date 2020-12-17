@@ -6,6 +6,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import com.google.api.client.http.*;
 import org.json.JSONObject;
 
 import com.google.api.client.auth.oauth2.AuthorizationCodeFlow;
@@ -14,9 +15,6 @@ import com.google.api.client.auth.oauth2.ClientParametersAuthentication;
 import com.google.api.client.auth.oauth2.Credential;
 import com.google.api.client.extensions.java6.auth.oauth2.AuthorizationCodeInstalledApp;
 import com.google.api.client.extensions.jetty.auth.oauth2.LocalServerReceiver;
-import com.google.api.client.http.GenericUrl;
-import com.google.api.client.http.HttpRequestFactory;
-import com.google.api.client.http.HttpTransport;
 import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.JsonFactory;
 import com.google.api.client.json.JsonObjectParser;
@@ -59,21 +57,21 @@ public class MieleOAuthAPI {
 
 	private Credential authorize(final String apiKey, final String apiSecret) throws IOException {
 		// set up authorization code flow
-		final var flow = new AuthorizationCodeFlow.Builder(
+		final AuthorizationCodeFlow flow = new AuthorizationCodeFlow.Builder(
 				BearerToken.authorizationHeaderAccessMethod(), HTTP_TRANSPORT, JSON_FACTORY,
 				new GenericUrl(TOKEN_SERVER_URL), new ClientParametersAuthentication(apiKey, apiSecret), apiKey,
 				AUTHORIZATION_SERVER_URL).setScopes(Arrays.asList(SCOPE)).setDataStoreFactory(this.dataStoreFactory)
 						.build();
 		// authorize
-		final var receiver = new LocalServerReceiver.Builder().setHost(DOMAIN).setPort(PORT).build();
+		final LocalServerReceiver receiver = new LocalServerReceiver.Builder().setHost(DOMAIN).setPort(PORT).build();
 		return new AuthorizationCodeInstalledApp(flow, receiver).authorize("user");
 	}
 
 	public List<MieleDevice> fetchDevices() throws IOException {
-		final var url = new GenericUrl("https://api.mcs3.miele.com/v1/devices");
-		final var request = this.requestFactory.buildGetRequest(url);
-		final var response = request.execute();
-		final var devices = new JSONObject(response.parseAsString());
+		final GenericUrl url = new GenericUrl("https://api.mcs3.miele.com/v1/devices");
+		final HttpRequest request = this.requestFactory.buildGetRequest(url);
+		final HttpResponse response = request.execute();
+		final JSONObject devices = new JSONObject(response.parseAsString());
 		return devices.keySet().stream().map(id -> new MieleDevice(id, devices.getJSONObject(id)))
 				.collect(Collectors.toList());
 	}

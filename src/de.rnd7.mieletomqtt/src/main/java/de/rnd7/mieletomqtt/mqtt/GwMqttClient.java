@@ -35,11 +35,11 @@ public class GwMqttClient {
 	private Optional<MqttClient> connect() {
 		try {
 			LOGGER.info("Connecting MQTT client");
-			final var result = new MqttClient(this.config.getUrl(),
+			final MqttClient result = new MqttClient(this.config.getUrl(),
 					this.config.getClientId().orElse(CLIENT_ID),
 					this.persistence);
 
-			final var connOpts = new MqttConnectOptions();
+			final MqttConnectOptions connOpts = new MqttConnectOptions();
 			connOpts.setCleanSession(true);
 			config.getUsername().ifPresent(connOpts::setUserName);
 			config.getPassword().map(String::toCharArray).ifPresent(connOpts::setPassword);
