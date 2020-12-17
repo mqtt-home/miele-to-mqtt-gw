@@ -3,10 +3,7 @@ package de.rnd7.mieletomqtt.mqtt;
 import java.util.Optional;
 
 import de.rnd7.mieletomqtt.config.ConfigMqtt;
-import org.eclipse.paho.client.mqttv3.MqttClient;
-import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
-import org.eclipse.paho.client.mqttv3.MqttException;
-import org.eclipse.paho.client.mqttv3.MqttMessage;
+import org.eclipse.paho.client.mqttv3.*;
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,6 +36,23 @@ public class GwMqttClient {
 					this.config.getClientId().orElse(CLIENT_ID),
 					this.persistence);
 
+			result.setCallback(new MqttCallback() {
+				@Override
+				public void connectionLost(Throwable cause) {
+					LOGGER.error(cause.getMessage(), cause);
+				}
+
+				@Override
+				public void messageArrived(String topic, MqttMessage message) throws Exception {
+					// do nothing
+				}
+
+				@Override
+				public void deliveryComplete(IMqttDeliveryToken token) {
+					// do nothing
+				}
+			});
+
 			final MqttConnectOptions connOpts = new MqttConnectOptions();
 			connOpts.setCleanSession(true);
 			config.getUsername().ifPresent(connOpts::setUserName);
@@ -48,7 +62,13 @@ public class GwMqttClient {
 
 			return Optional.of(result);
 		} catch (final MqttException e) {
-			LOGGER.error(e.getMessage(), e);
+			if (LOGGER.isDebugEnabled()) {
+				LOGGER.debug(e.getMessage(), e);
+			}
+			else {
+				LOGGER.error(e.getMessage());
+			}
+
 			return Optional.empty();
 		}
 	}

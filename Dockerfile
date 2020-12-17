@@ -1,4 +1,5 @@
-FROM openjdk:8-jdk-alpine
+# ---- Build ----
+FROM maven:3.6.3-adoptopenjdk-15 as build
 
 LABEL maintainer="Philipp Arndt <2f.mail@gmx.de>"
 LABEL version="1.0"
@@ -10,11 +11,16 @@ ENV TERM xterm
 
 WORKDIR /opt/miele-to-mqtt-gw
 
-RUN apk update --no-cache && apk add --no-cache maven
-
 COPY src /opt/miele-to-mqtt-gw
 
 RUN mvn install assembly:single
-RUN cp ./de.rnd7.mieletomqtt/target/miele-to-mqtt-gw.jar ./miele-to-mqtt-gw.jar
 
-CMD java -jar miele-to-mqtt-gw.jar /var/lib/miele-to-mqtt-gw/config.json
+# ---- Prod ----
+FROM maven:3.6.3-adoptopenjdk-15
+RUN mkdir /opt/app
+WORKDIR /opt/app
+COPY --from=build /opt/miele-to-mqtt-gw/de.rnd7.mieletomqtt/target/miele-to-mqtt-gw.jar .
+COPY logback.xml .
+
+ENV LOGBACK_XML ./miele-to-mqtt-gw.jar/logback.xml
+CMD java -Dlogback.configurationFile=$LOGBACK_XML -jar ./miele-to-mqtt-gw.jar /var/lib/miele-to-mqtt-gw/config.json

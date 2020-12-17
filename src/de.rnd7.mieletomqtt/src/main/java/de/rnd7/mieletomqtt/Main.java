@@ -7,6 +7,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import de.rnd7.mieletomqtt.config.ConfigMiele;
+import de.rnd7.mieletomqtt.miele.MieleDevice;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -15,14 +16,11 @@ import com.google.common.eventbus.EventBus;
 import de.rnd7.mieletomqtt.config.Config;
 import de.rnd7.mieletomqtt.config.ConfigParser;
 import de.rnd7.mieletomqtt.miele.MieleAPI;
-import de.rnd7.mieletomqtt.miele.MieleDevice;
 import de.rnd7.mieletomqtt.mqtt.GwMqttClient;
 
 public class Main {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(Main.class);
-
-	private final Config config;
 
 	private final EventBus eventBus = new EventBus();
 
@@ -30,10 +28,12 @@ public class Main {
 
 	@SuppressWarnings("squid:S2189")
 	public Main(final Config config) {
-		this.config = config;
+		LOGGER.debug("Debug enabled");
+		LOGGER.info("Info enabled");
+
 		this.eventBus.register(new GwMqttClient(config));
 
-		ConfigMiele miele = config.getMiele();
+		final ConfigMiele miele = config.getMiele();
 		this.mieleAPI = new MieleAPI(miele.getClientId(), miele.getClientSecret(),
 				miele.getUsername(), miele.getPassword());
 
@@ -43,7 +43,7 @@ public class Main {
 			executor.scheduleAtFixedRate(this.mieleAPI::updateToken, 2, 2, TimeUnit.HOURS);
 
 			while (true) {
-				this.sleep();
+				Thread.sleep(100);
 			}
 		} catch (final Exception e) {
 			LOGGER.error(e.getMessage(), e);
@@ -52,21 +52,12 @@ public class Main {
 
 	private void exec() {
 		try {
-			for (final MieleDevice mieleDevice : this.mieleAPI.fetchDevices()) {
-				this.eventBus.post(mieleDevice.toFullMessage());
-				this.eventBus.post(mieleDevice.toSmallMessage());
+			for (final MieleDevice device : this.mieleAPI.fetchDevices()) {
+				this.eventBus.post(device.toFullMessage());
+				this.eventBus.post(device.toSmallMessage());
 			}
 		} catch (final Exception e) {
 			LOGGER.error(e.getMessage(), e);
-		}
-	}
-
-	private void sleep() {
-		try {
-			Thread.sleep(100);
-		} catch (final InterruptedException e) {
-			LOGGER.debug(e.getMessage(), e);
-			Thread.currentThread().interrupt();
 		}
 	}
 

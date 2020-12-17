@@ -65,6 +65,18 @@ cd ./production
 docker-compose up -d
 ```
 
+## Logging
+
+When you like to use a custom logging configuration, you can set the environment
+variable `LOGBACK_XML` in your compose file and put a `logback.xml`to the config folder.
+
+Example:
+```
+environment:
+  TZ: "Europe/Berlin"
+  LOGBACK_XML: /var/lib/miele-to-mqtt-gw/logback.xml
+```
+
 ## openHAB configuration
 
 see [openHAB example](openHAB.md)
