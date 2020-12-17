@@ -48,7 +48,13 @@ public class GwMqttClient {
 
 			return Optional.of(result);
 		} catch (final MqttException e) {
-			LOGGER.error(e.getMessage(), e);
+			if (LOGGER.isDebugEnabled()) {
+				LOGGER.debug(e.getMessage(), e);
+			}
+			else {
+				LOGGER.error(e.getMessage());
+			}
+
 			return Optional.empty();
 		}
 	}

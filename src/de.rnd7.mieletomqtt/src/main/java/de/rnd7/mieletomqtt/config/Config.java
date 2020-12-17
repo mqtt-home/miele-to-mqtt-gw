@@ -12,5 +12,4 @@ public class Config {
 	public ConfigMiele getMiele() {
 		return miele;
 	}
-
 }
