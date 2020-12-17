@@ -6,6 +6,7 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.util.Collections;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -44,6 +45,15 @@ public class MieleAPI {
 	}
 
 	public List<MieleDevice> fetchDevices() throws IOException {
+		if (this.token == null) {
+			LOGGER.error("No token available");
+			updateToken();
+			if (token == null) {
+				LOGGER.error("No token available (give up)");
+				return Collections.emptyList();
+			}
+		}
+
 		final URL url = new URL("https://api.mcs3.miele.com/v1/devices/");
 		final HttpURLConnection connection = (HttpURLConnection) url.openConnection();
 		connection.setRequestMethod("GET");
