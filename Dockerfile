@@ -11,6 +11,8 @@ ENV TERM xterm
 
 WORKDIR /opt/miele-to-mqtt-gw
 
+RUN apk update --no-cache && apk add --no-cache maven
+
 COPY src /opt/miele-to-mqtt-gw
 
 RUN mvn install assembly:single
