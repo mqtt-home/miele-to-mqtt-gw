@@ -42,6 +42,10 @@ public class MieleAPI {
 		this.updateToken();
 	}
 
+	public Token getToken() {
+		return token;
+	}
+
 	public List<MieleDevice> fetchDevices() throws IOException {
 		if (this.token == null) {
 			LOGGER.error("No token available");
