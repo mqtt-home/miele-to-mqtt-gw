@@ -7,6 +7,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import de.rnd7.miele.ConfigMiele;
+import de.rnd7.miele.api.SSEClient;
 import de.rnd7.mqtt.GwMqttClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,11 +34,21 @@ public class Main {
 		MieleAPI mieleAPI = new MieleAPI(miele.getClientId(), miele.getClientSecret(),
 				miele.getUsername(), miele.getPassword());
 
-		MielePollingHandler handler = new MielePollingHandler(mieleAPI, eventBus, config.isDeduplicate());
-
 		final ScheduledExecutorService executor = Executors.newScheduledThreadPool(2);
-		executor.scheduleAtFixedRate(handler::exec, 0, config.getMqtt().getPollingInterval().getSeconds(), TimeUnit.SECONDS);
 		executor.scheduleAtFixedRate(mieleAPI::updateToken, 2, 2, TimeUnit.HOURS);
+
+		MieleEventHandler eventHandler = new MieleEventHandler(eventBus, config.isDeduplicate());
+
+		if (config.getMiele().getMode() == ConfigMiele.Mode.sse) {
+			LOGGER.info("Using Miele SSE api");
+			final SSEClient client = new SSEClient();
+			client.start(mieleAPI, eventHandler);
+		}
+		else {
+			LOGGER.info("Using Miele polling api");
+			MielePollingHandler handler = new MielePollingHandler(mieleAPI, eventHandler);
+			executor.scheduleAtFixedRate(handler::exec, 0, config.getMqtt().getPollingInterval().getSeconds(), TimeUnit.SECONDS);
+		}
 	}
 
 	public static void main(final String[] args) {

@@ -6,16 +6,19 @@ import org.apache.client.sse.SseRequest;
 import org.apache.client.sse.SseResponse;
 import org.apache.http.impl.nio.client.CloseableHttpAsyncClient;
 import org.apache.http.impl.nio.client.HttpAsyncClients;
+import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.*;
+import java.util.function.Consumer;
 
 public class SSEClient {
     private static final Logger LOGGER = LoggerFactory.getLogger(SSEClient.class);
     private final ExecutorService executor = Executors.newFixedThreadPool(1);
 
-    public BlockingQueue<Event> subscribe(MieleAPI api) throws ExecutionException, InterruptedException {
+    public Future<SseResponse> subscribe(MieleAPI api) throws ExecutionException, InterruptedException {
+        LOGGER.debug("Subscribe SSE");
         final CloseableHttpAsyncClient asyncClient = HttpAsyncClients.createDefault();
         asyncClient.start();
         final SseRequest request = new SseRequest("https://api.mcs3.miele.com/v1/devices/all/events");
@@ -23,35 +26,39 @@ public class SSEClient {
         request.setHeader("Authorization", "Bearer " + api.getToken().getAccessToken());
         final ApacheHttpSseClient sseClient = new ApacheHttpSseClient(asyncClient, executor);
 
-        final SseResponse sseResponse = sseClient.execute(request).get();
-        return sseResponse.getEntity().getEvents();
+        return sseClient.execute(request);
     }
 
-    public void start(MieleAPI api) {
+    public void start(MieleAPI api, Consumer<MieleDevice> consumer) {
         while (true) { // NOSONAR
             try {
-                api.updateToken();
+                final Future<SseResponse> future = subscribe(api);
 
-                final BlockingQueue<Event> events = subscribe(api);
+                final SseResponse sseResponse = future.get();
+                final BlockingQueue<Event> events = sseResponse.getEntity().getEvents();
 
                 while (true) {
-                    Event event = events.poll(1, TimeUnit.MINUTES);
+                    final Event event = events.poll(6, TimeUnit.SECONDS);
                     if (event == null) {
-                        LOGGER.info("No event within 1m (Not even PING). Reconnecting.");
                         break;
                     }
 
                     if (event.getEvent().equals("devices")) {
-                        LOGGER.info(event.getData());
+                        final JSONObject devices = new JSONObject(event.getData());
+
+                        devices.keySet().stream().map(id -> new MieleDevice(id, devices.getJSONObject(id)))
+                                .forEach(consumer::accept);
                     }
                     else if (event.getEvent().equals("ping")) {
-                        System.out.print(".");
+                        LOGGER.debug(".");
                     }
                 }
             } catch (Exception e) {
                 LOGGER.error(e.getMessage(), e);
                 try {
-                    Thread.sleep(20000);
+                    // Wait one minute after error (e.g. Internet connection down)
+                    Thread.sleep(60_000);
+                    api.updateToken();
                 } catch (InterruptedException interruptedException) {
                     interruptedException.printStackTrace();
                     Thread.currentThread().interrupt();

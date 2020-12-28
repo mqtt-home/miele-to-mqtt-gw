@@ -116,5 +116,4 @@ public class SseEntity extends AbstractHttpEntity {
     public boolean isStreaming() {
         return original.isStreaming();
     }
-
 }

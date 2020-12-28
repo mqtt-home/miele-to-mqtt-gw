@@ -56,14 +56,14 @@ public class GwMqttClient {
 			config.getPassword().map(String::toCharArray).ifPresent(connOpts::setPassword);
 
 			result.connect(connOpts);
-
+			LOGGER.info("MQTT client connected");
 			return Optional.of(result);
 		} catch (final MqttException e) {
 			if (LOGGER.isDebugEnabled()) {
 				LOGGER.debug(e.getMessage(), e);
 			}
 			else {
-				LOGGER.error(e.getMessage());
+				LOGGER.error(e.getMessage() + " " + Optional.ofNullable(e.getCause()).map(Throwable::getMessage).orElse("No cause."));
 			}
 
 			return Optional.empty();

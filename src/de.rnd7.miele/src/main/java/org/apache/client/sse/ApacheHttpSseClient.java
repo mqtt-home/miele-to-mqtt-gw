@@ -1,5 +1,6 @@
 package org.apache.client.sse;
 
+import de.rnd7.miele.api.SSEClient;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.concurrent.FutureCallback;
@@ -8,6 +9,8 @@ import org.apache.http.nio.IOControl;
 import org.apache.http.nio.client.methods.AsyncCharConsumer;
 import org.apache.http.nio.client.methods.HttpAsyncMethods;
 import org.apache.http.protocol.HttpContext;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.CharBuffer;
@@ -22,6 +25,7 @@ import java.util.concurrent.Future;
  * To abort the connection from client side, async client should be closed.
  */
 public class ApacheHttpSseClient {
+    private static final Logger LOGGER = LoggerFactory.getLogger(ApacheHttpSseClient.class);
 
     private final CloseableHttpAsyncClient httpAsyncClient;
     private final ExecutorService executorService;
@@ -31,10 +35,9 @@ public class ApacheHttpSseClient {
         this.executorService = executorService;
     }
 
-    public Future<SseResponse> execute(HttpUriRequest request) {
-
-        CompletableFuture<SseResponse> futureResp = new CompletableFuture<>();
-        AsyncCharConsumer<SseResponse> charConsumer = new AsyncCharConsumer<SseResponse>() {
+    public CompletableFuture<SseResponse> execute(HttpUriRequest request) {
+        final CompletableFuture<SseResponse> futureResp = new CompletableFuture<>();
+        final AsyncCharConsumer<SseResponse> charConsumer = new AsyncCharConsumer<SseResponse>() { // NOSONAR
             private SseResponse response;
             @Override
             protected void onCharReceived(CharBuffer buf, IOControl ioctrl) throws IOException {
@@ -54,29 +57,38 @@ public class ApacheHttpSseClient {
             }
         };
 
+        final FutureCallback<SseResponse> callback = new FutureCallback<SseResponse>() {
+            @Override
+            public void completed(SseResponse result) {
+                futureResp.cancel(true);
+                closeQuietly(charConsumer);
+            }
+
+            @Override
+            public void failed(Exception excObj) {
+                LOGGER.error(excObj.getMessage(), excObj);
+                futureResp.completeExceptionally(excObj);
+                closeQuietly(charConsumer);
+            }
+
+            @Override
+            public void cancelled() {
+                futureResp.cancel(true);
+                closeQuietly(charConsumer);
+            }
+        };
+
         executorService.submit(() ->
-                httpAsyncClient.execute(HttpAsyncMethods.create(request), charConsumer, new FutureCallback<SseResponse>() {
-                        @Override
-                        public void completed(SseResponse result) {
-                            System.out.println("completed");
-                            futureResp.complete(result);
-                        }
-
-                        @Override
-                        public void failed(Exception excObj) {
-                            System.out.println(excObj.getMessage());
-                            futureResp.completeExceptionally(excObj);
-                        }
-
-                        @Override
-                        public void cancelled() {
-                            System.out.println("cancelled");
-                            futureResp.cancel(true);
-                        }
-                    }
-                )
+            httpAsyncClient.execute(HttpAsyncMethods.create(request), charConsumer, callback)
         );
         return futureResp;
     }
 
+    private void closeQuietly(final AsyncCharConsumer<SseResponse> charConsumer) {
+        try {
+            charConsumer.close();
+        } catch (IOException e) {
+            LOGGER.trace(e.getMessage(), e);
+        }
+    }
 }

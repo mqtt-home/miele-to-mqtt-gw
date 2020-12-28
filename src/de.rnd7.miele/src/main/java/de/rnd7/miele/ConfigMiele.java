@@ -3,6 +3,11 @@ package de.rnd7.miele;
 import com.google.gson.annotations.SerializedName;
 
 public class ConfigMiele {
+    public static enum Mode {
+        sse,
+        polling
+    }
+
     @SerializedName("client-id")
     private String clientId;
     @SerializedName("client-secret")
@@ -12,6 +17,9 @@ public class ConfigMiele {
     private String username;
     @SerializedName("password")
     private String password;
+
+    @SerializedName("mode")
+    private Mode mode = Mode.polling;
 
     public String getClientId() {
         return clientId;
@@ -29,4 +37,7 @@ public class ConfigMiele {
         return username;
     }
 
+    public Mode getMode() {
+        return mode;
+    }
 }
