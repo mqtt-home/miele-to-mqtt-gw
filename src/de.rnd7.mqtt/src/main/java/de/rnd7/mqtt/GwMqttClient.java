@@ -94,7 +94,7 @@ public class GwMqttClient {
 	@Subscribe
 	public void publish(final Message message) {
 		final String topic = this.config.getFullMessageTopic() + "/" + message.getTopic();
-		final String valueString = message.toString();
+		final String valueString = message.getData();
 		this.publish(topic, valueString);
 	}
 
