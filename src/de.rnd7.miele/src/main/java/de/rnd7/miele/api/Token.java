@@ -1,4 +1,4 @@
-package de.rnd7.mieletomqtt.miele;
+package de.rnd7.miele.api;
 
 import org.json.JSONObject;
 

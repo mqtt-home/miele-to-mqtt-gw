@@ -1,4 +1,4 @@
-package de.rnd7.mieletomqtt.miele;
+package de.rnd7.miele.api;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -24,10 +24,8 @@ import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import de.rnd7.mieletomqtt.Main;
-
 public class MieleAPI {
-	private static final Logger LOGGER = LoggerFactory.getLogger(Main.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(MieleAPI.class);
 
 	private final String clientId;
 	private final String clientSecret;

@@ -6,8 +6,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-import de.rnd7.mieletomqtt.config.ConfigMiele;
-import de.rnd7.mieletomqtt.miele.MieleDevice;
+import de.rnd7.miele.ConfigMiele;
+import de.rnd7.mqtt.GwMqttClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -15,50 +15,29 @@ import com.google.common.eventbus.EventBus;
 
 import de.rnd7.mieletomqtt.config.Config;
 import de.rnd7.mieletomqtt.config.ConfigParser;
-import de.rnd7.mieletomqtt.miele.MieleAPI;
-import de.rnd7.mieletomqtt.mqtt.GwMqttClient;
+import de.rnd7.miele.api.MieleAPI;
 
 public class Main {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(Main.class);
-
-	private final EventBus eventBus = new EventBus();
-
-	private final MieleAPI mieleAPI;
 
 	@SuppressWarnings("squid:S2189")
 	public Main(final Config config) {
 		LOGGER.debug("Debug enabled");
 		LOGGER.info("Info enabled");
 
-		this.eventBus.register(new GwMqttClient(config));
+		final EventBus eventBus = new EventBus();
+		eventBus.register(new GwMqttClient(config.getMqtt()));
 
 		final ConfigMiele miele = config.getMiele();
-		this.mieleAPI = new MieleAPI(miele.getClientId(), miele.getClientSecret(),
+		MieleAPI mieleAPI = new MieleAPI(miele.getClientId(), miele.getClientSecret(),
 				miele.getUsername(), miele.getPassword());
 
-		try {
-			final ScheduledExecutorService executor = Executors.newScheduledThreadPool(2);
-			executor.scheduleAtFixedRate(this::exec, 0, config.getMqtt().getPollingInterval().getSeconds(), TimeUnit.SECONDS);
-			executor.scheduleAtFixedRate(this.mieleAPI::updateToken, 2, 2, TimeUnit.HOURS);
+		MielePollingHandler handler = new MielePollingHandler(mieleAPI, eventBus, config.isDeduplicate());
 
-			while (true) {
-				Thread.sleep(100);
-			}
-		} catch (final Exception e) {
-			LOGGER.error(e.getMessage(), e);
-		}
-	}
-
-	private void exec() {
-		try {
-			for (final MieleDevice device : this.mieleAPI.fetchDevices()) {
-				this.eventBus.post(device.toFullMessage());
-				this.eventBus.post(device.toSmallMessage());
-			}
-		} catch (final Exception e) {
-			LOGGER.error(e.getMessage(), e);
-		}
+		final ScheduledExecutorService executor = Executors.newScheduledThreadPool(2);
+		executor.scheduleAtFixedRate(handler::exec, 0, config.getMqtt().getPollingInterval().getSeconds(), TimeUnit.SECONDS);
+		executor.scheduleAtFixedRate(mieleAPI::updateToken, 2, 2, TimeUnit.HOURS);
 	}
 
 	public static void main(final String[] args) {

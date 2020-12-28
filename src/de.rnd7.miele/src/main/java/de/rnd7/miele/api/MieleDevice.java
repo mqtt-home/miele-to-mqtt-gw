@@ -1,12 +1,10 @@
-package de.rnd7.mieletomqtt.miele;
+package de.rnd7.miele.api;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
 import org.json.JSONObject;
-
-import de.rnd7.mieletomqtt.mqtt.Message;
 
 public class MieleDevice {
 	private final String id;
@@ -89,11 +87,11 @@ public class MieleDevice {
 		return this.remainingDuration;
 	}
 
-	public Message toFullMessage() {
-		return new Message(this.id + "/full", this.data);
+	public JSONObject toFullMessage() {
+		return this.data;
 	}
 
-	public Message toSmallMessage() {
-		return new Message(this.id, this.small);
+	public JSONObject toSmallMessage() {
+		return this.small;
 	}
 }

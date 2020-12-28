@@ -1,4 +1,4 @@
-package de.rnd7.mieletomqtt.config;
+package de.rnd7.mqtt;
 
 import com.google.gson.annotations.SerializedName;
 

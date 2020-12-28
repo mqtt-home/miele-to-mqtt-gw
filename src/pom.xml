@@ -55,6 +55,8 @@
 
 	<modules>
 		<module>de.rnd7.mieletomqtt</module>
+		<module>de.rnd7.miele</module>
+		<module>de.rnd7.mqtt</module>
 	</modules>
 
 </project>
