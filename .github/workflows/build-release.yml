@@ -1,5 +1,5 @@
 # Workflow from https://github.com/cschleiden/vscode-github-actions/blob/master/.github/workflows/build-preview.yml
-name: Build prerelease
+name: Build release
 
 on:
   push:
