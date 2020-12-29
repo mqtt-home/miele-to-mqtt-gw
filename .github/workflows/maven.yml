@@ -14,4 +14,10 @@ jobs:
       with:
         java-version: 15
     - name: Build with Maven
+      env:
+        MIELE_CLIENT_ID: ${{ secrets.MIELE_CLIENT_ID }}
+        MIELE_CLIENT_SECRET: ${{ secrets.MIELE_CLIENT_SECRET }}
+        MIELE_PASSWORD: ${{ secrets.MIELE_PASSWORD }}
+        MIELE_USERNAME: ${{ secrets.MIELE_USERNAME }}
+
       run: mvn -B package --file src/pom.xml
