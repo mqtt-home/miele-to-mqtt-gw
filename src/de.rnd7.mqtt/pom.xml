@@ -3,27 +3,16 @@
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 
-	<parent>
+    <parent>
 		<groupId>de.rnd7.mieletomqtt</groupId>
 		<artifactId>de.rnd7.mieletomqtt.parent</artifactId>
 		<version>0.0.1-SNAPSHOT</version>
 	</parent>
 
-	<artifactId>de.rnd7.mieletomqtt</artifactId>
+	<artifactId>de.rnd7.mqtt</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 
 	<dependencies>
-		<dependency>
-			<groupId>de.rnd7.mieletomqtt</groupId>
-			<artifactId>de.rnd7.miele</artifactId>
-			<version>0.0.1-SNAPSHOT</version>
-		</dependency>
-		<dependency>
-			<groupId>de.rnd7.mieletomqtt</groupId>
-			<artifactId>de.rnd7.mqtt</artifactId>
-			<version>0.0.1-SNAPSHOT</version>
-		</dependency>
-
 		<!-- https://mvnrepository.com/artifact/org.apache.commons/commons-text -->
 		<dependency>
 			<groupId>org.apache.commons</groupId>
@@ -51,5 +40,19 @@
 			<artifactId>json</artifactId>
 			<version>20180813</version>
 		</dependency>
+
+		<!-- https://mvnrepository.com/artifact/com.google.guava/guava -->
+		<dependency>
+			<groupId>com.google.guava</groupId>
+			<artifactId>guava</artifactId>
+			<version>30.1-jre</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.eclipse.paho</groupId>
+			<artifactId>org.eclipse.paho.client.mqttv3</artifactId>
+			<version>1.2.1</version>
+		</dependency>
+
 	</dependencies>
 </project>

@@ -44,12 +44,25 @@ See [fullmessage-example](fullmessage-example.md)
     "client-id": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
     "client-secret": "12345678901234567890123456789012",
     "username": "miele_at_home_user@example.com",
-    "password": "miele_at_home_password"
+    "password": "miele_at_home_password",
+    "mode": "polling"
   },
-
+  
+  "deduplicate": true,
   "timezone": "GMT+1"
 }
 ```
+
+# Use server sent events
+
+Miele provides a server-sent-events api. To enable this, set the `mode`
+property in your configuration to `sse`. With sse enabled you will get
+faster notifications when some device state will change. This is an experimental
+setting and not enabled by default.
+
+# Deduplicate messages
+
+When `deduplicate` is set to `true` no duplicate mqtt messages will be sent.
 
 # build
 

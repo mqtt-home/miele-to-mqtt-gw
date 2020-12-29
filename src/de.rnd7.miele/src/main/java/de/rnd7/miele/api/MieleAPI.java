@@ -1,4 +1,4 @@
-package de.rnd7.mieletomqtt.miele;
+package de.rnd7.miele.api;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -6,6 +6,7 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.regex.Matcher;
@@ -24,10 +25,8 @@ import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import de.rnd7.mieletomqtt.Main;
-
 public class MieleAPI {
-	private static final Logger LOGGER = LoggerFactory.getLogger(Main.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(MieleAPI.class);
 
 	private final String clientId;
 	private final String clientSecret;
@@ -42,6 +41,10 @@ public class MieleAPI {
 		this.password = password;
 
 		this.updateToken();
+	}
+
+	public Token getToken() {
+		return token;
 	}
 
 	public List<MieleDevice> fetchDevices() throws IOException {
@@ -110,7 +113,6 @@ public class MieleAPI {
 			post.setEntity(new StringEntity(request));
 
 			try (CloseableHttpResponse response = httpclient.execute(post)) {
-
 				final Header header = response.getHeaders("Location")[0];
 				final String value = header.getValue();
 

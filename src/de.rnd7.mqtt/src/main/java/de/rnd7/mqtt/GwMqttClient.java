@@ -1,16 +1,13 @@
-package de.rnd7.mieletomqtt.mqtt;
+package de.rnd7.mqtt;
 
 import java.util.Optional;
 
-import de.rnd7.mieletomqtt.config.ConfigMqtt;
 import org.eclipse.paho.client.mqttv3.*;
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.eventbus.Subscribe;
-
-import de.rnd7.mieletomqtt.config.Config;
 
 public class GwMqttClient {
 	private static final int QOS = 2;
@@ -24,8 +21,8 @@ public class GwMqttClient {
 
 	private Optional<MqttClient> client;
 
-	public GwMqttClient(final Config config) {
-		this.config = config.getMqtt();
+	public GwMqttClient(final ConfigMqtt config) {
+		this.config = config;
 		this.client = this.connect();
 	}
 
@@ -59,14 +56,14 @@ public class GwMqttClient {
 			config.getPassword().map(String::toCharArray).ifPresent(connOpts::setPassword);
 
 			result.connect(connOpts);
-
+			LOGGER.info("MQTT client connected");
 			return Optional.of(result);
 		} catch (final MqttException e) {
 			if (LOGGER.isDebugEnabled()) {
 				LOGGER.debug(e.getMessage(), e);
 			}
 			else {
-				LOGGER.error(e.getMessage());
+				LOGGER.error(e.getMessage() + " " + Optional.ofNullable(e.getCause()).map(Throwable::getMessage).orElse("No cause."));
 			}
 
 			return Optional.empty();
@@ -97,7 +94,7 @@ public class GwMqttClient {
 	@Subscribe
 	public void publish(final Message message) {
 		final String topic = this.config.getFullMessageTopic() + "/" + message.getTopic();
-		final String valueString = message.getJson().toString();
+		final String valueString = message.getData();
 		this.publish(topic, valueString);
 	}
 
