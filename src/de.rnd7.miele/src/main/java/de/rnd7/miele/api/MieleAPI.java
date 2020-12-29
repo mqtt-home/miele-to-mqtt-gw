@@ -113,6 +113,7 @@ public class MieleAPI {
 			post.setEntity(new StringEntity(request));
 
 			try (CloseableHttpResponse response = httpclient.execute(post)) {
+				System.out.println(this.username);
 				System.out.println(Arrays.toString(response.getAllHeaders()));
 				final Header header = response.getHeaders("Location")[0];
 				final String value = header.getValue();
