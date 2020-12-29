@@ -4,10 +4,8 @@ import junit.framework.TestCase;
 import org.junit.Test;
 
 import java.util.List;
-import java.util.Objects;
 
 public class MieleAPITest extends TestCase {
-
 
     @Test
     public void testLogin() throws Exception {
@@ -19,11 +17,11 @@ public class MieleAPITest extends TestCase {
     public void test_device_list() throws Exception {
         final MieleAPI api = TestHelper.createAPI();
         final List<MieleDevice> devices = api.fetchDevices();
-        assertEquals(1, devices.size());
+        assertFalse("Expected at least one device", devices.isEmpty());
         final MieleDevice dishwasher = devices.iterator().next();
-        assertEquals("G7560", dishwasher.getData()
+        assertFalse("Expected device name to be non-empty", dishwasher.getData()
                 .getJSONObject("ident")
                 .getJSONObject("deviceIdentLabel")
-                .get("techType").toString());
+                .get("techType").toString().isEmpty());
     }
 }

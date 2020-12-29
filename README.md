@@ -66,7 +66,22 @@ When `deduplicate` is set to `true` no duplicate mqtt messages will be sent.
 
 # build
 
-build the docker container using `build.sh`
+## Precondition
+
+To execute test cases against the real Miele API, you need to set some environment
+variables.
+
+| Name                | Value               |
+| ------------------- | ------------------- |
+| MIELE_CLIENT_ID     | your client id      |
+| MIELE_CLIENT_SECRET | your client secret  |
+| MIELE_USERNAME      | your Miele username |
+| MIELE_PASSWORD      | your Miele password |
+
+This is necessary to verify the login method is still working, and the API has
+not been changed incompatible.
+
+Then, build the docker container using `build.sh`.
 
 # run
 
