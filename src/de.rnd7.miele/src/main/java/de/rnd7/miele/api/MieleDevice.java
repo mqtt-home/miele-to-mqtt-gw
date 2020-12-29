@@ -71,22 +71,6 @@ public class MieleDevice {
 		return this.id;
 	}
 
-	public int getPhaseId() {
-		return this.phaseId;
-	}
-
-	public ProgramPhase getPhase() {
-		return this.phase;
-	}
-
-	public State getState() {
-		return this.state;
-	}
-
-	public Duration getRemainingDuration() {
-		return this.remainingDuration;
-	}
-
 	public JSONObject toFullMessage() {
 		return this.data;
 	}
