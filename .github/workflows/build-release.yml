@@ -39,5 +39,5 @@ jobs:
       with:
         upload_url: ${{ steps.create_release.outputs.upload_url }}
         asset_path: ./src/de.rnd7.mieletomqtt/target/miele-to-mqtt-gw.jar
-        asset_name: ./src/de.rnd7.mieletomqtt/target/miele-to-mqtt-gw.jar
+        asset_name: miele-to-mqtt-gw.jar
         asset_content_type: application/jar
