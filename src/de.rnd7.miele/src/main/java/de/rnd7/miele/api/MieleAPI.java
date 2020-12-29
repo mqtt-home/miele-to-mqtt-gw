@@ -6,6 +6,7 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.regex.Matcher;
@@ -112,7 +113,7 @@ public class MieleAPI {
 			post.setEntity(new StringEntity(request));
 
 			try (CloseableHttpResponse response = httpclient.execute(post)) {
-
+				System.out.println(Arrays.toString(response.getAllHeaders()));
 				final Header header = response.getHeaders("Location")[0];
 				final String value = header.getValue();
 
