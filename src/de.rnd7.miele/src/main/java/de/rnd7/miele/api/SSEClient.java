@@ -17,7 +17,7 @@ public class SSEClient {
     private static final Logger LOGGER = LoggerFactory.getLogger(SSEClient.class);
     private final ExecutorService executor = Executors.newFixedThreadPool(1);
 
-    public Future<SseResponse> subscribe(MieleAPI api) throws ExecutionException, InterruptedException {
+    BlockingQueue<Event> subscribe(MieleAPI api) throws Exception {
         LOGGER.debug("Subscribe SSE");
         final CloseableHttpAsyncClient asyncClient = HttpAsyncClients.createDefault();
         asyncClient.start();
@@ -26,16 +26,16 @@ public class SSEClient {
         request.setHeader("Authorization", "Bearer " + api.getToken().getAccessToken());
         final ApacheHttpSseClient sseClient = new ApacheHttpSseClient(asyncClient, executor);
 
-        return sseClient.execute(request);
+        final Future<SseResponse> future = sseClient.execute(request);
+
+        final SseResponse sseResponse = future.get(10, TimeUnit.SECONDS);
+        return sseResponse.getEntity().getEvents();
     }
 
     public void start(MieleAPI api, Consumer<MieleDevice> consumer) {
         while (true) { // NOSONAR
             try {
-                final Future<SseResponse> future = subscribe(api);
-
-                final SseResponse sseResponse = future.get();
-                final BlockingQueue<Event> events = sseResponse.getEntity().getEvents();
+                final BlockingQueue<Event> events = subscribe(api);
 
                 while (true) {
                     final Event event = events.poll(6, TimeUnit.SECONDS);
