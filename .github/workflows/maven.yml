@@ -15,9 +15,9 @@ jobs:
         java-version: 8
     - name: Build with Maven
       env:
-        MIELE_CLIENT_ID: ${{ secrets.MIELE_CLIENT_ID }}
-        MIELE_CLIENT_SECRET: ${{ secrets.MIELE_CLIENT_SECRET }}
-        MIELE_PASSWORD: ${{ secrets.MIELE_PASSWORD }}
-        MIELE_USERNAME: ${{ secrets.MIELE_USERNAME }}
+        MIELE_CLIENT_ID: ${{ TEST_CASES.MIELE_CLIENT_ID }}
+        MIELE_CLIENT_SECRET: ${{ TEST_CASES.MIELE_CLIENT_SECRET }}
+        MIELE_PASSWORD: ${{ TEST_CASES.MIELE_PASSWORD }}
+        MIELE_USERNAME: ${{ TEST_CASES.MIELE_USERNAME }}
 
       run: mvn -B package --file src/pom.xml
