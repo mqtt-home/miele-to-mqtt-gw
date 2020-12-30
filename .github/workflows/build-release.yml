@@ -23,7 +23,7 @@ jobs:
           MIELE_CLIENT_SECRET: ${{ secrets.MIELE_CLIENT_SECRET }}
           MIELE_PASSWORD: ${{ secrets.MIELE_PASSWORD }}
           MIELE_USERNAME: ${{ secrets.MIELE_USERNAME }}
-        run: mvn -B install assembly:single --file src/pom.xml
+        run: mvn -B package --file src/pom.xml
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v1

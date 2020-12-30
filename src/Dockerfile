@@ -25,7 +25,7 @@ RUN apk update --no-cache && apk add --no-cache maven
 
 COPY . /opt/miele-to-mqtt-gw
 
-RUN mvn install assembly:single
+RUN mvn -B package
 
 # ---- Prod ----
 FROM openjdk:8-jdk-alpine
