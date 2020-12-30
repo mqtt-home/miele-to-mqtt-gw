@@ -55,7 +55,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: 'build-${{ github.run_number }}-${{ steps.docker_build.outputs.digest }}'
+          tag_name: 'build-${{ github.run_number }}'
           release_name: Release ${{ github.run_number }} ${{ steps.docker_build.outputs.digest }}
           draft: false
           prerelease: true
