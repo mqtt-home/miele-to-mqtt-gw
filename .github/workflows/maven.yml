@@ -19,5 +19,5 @@ jobs:
         MIELE_CLIENT_SECRET: ${{ secrets.MIELE_CLIENT_SECRET }}
         MIELE_PASSWORD: ${{ secrets.MIELE_PASSWORD }}
         MIELE_USERNAME: ${{ secrets.MIELE_USERNAME }}
-      run: mvn -B package --file src/pom.xml
+      run: mvn -B package verify --file src/pom.xml
 
