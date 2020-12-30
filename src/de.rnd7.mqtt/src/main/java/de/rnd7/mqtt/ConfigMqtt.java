@@ -19,6 +19,13 @@ public class ConfigMqtt {
     @SerializedName("client-id")
     private String clientId;
 
+    public static ConfigMqtt createFor(String host, int port, String fullMessageTopic) {
+        final ConfigMqtt config = new ConfigMqtt();
+        config.url = String.format("tcp://%s:%s", host, port);
+        config.fullMessageTopic = fullMessageTopic;
+        return config;
+    }
+
     public String getUrl() {
         return url;
     }

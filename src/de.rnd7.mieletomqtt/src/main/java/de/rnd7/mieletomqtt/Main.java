@@ -28,7 +28,7 @@ public class Main {
 		LOGGER.info("Info enabled");
 
 		final EventBus eventBus = new EventBus();
-		eventBus.register(new GwMqttClient(config.getMqtt()));
+		eventBus.register(new GwMqttClient(config.getMqtt(), eventBus));
 
 		final ConfigMiele miele = config.getMiele();
 		MieleAPI mieleAPI = new MieleAPI(miele.getClientId(), miele.getClientSecret(),
