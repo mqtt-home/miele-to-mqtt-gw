@@ -3,16 +3,22 @@ package de.rnd7.miele.api;
 import junit.framework.TestCase;
 import org.apache.client.sse.Event;
 import org.apache.client.sse.SseResponse;
+import org.awaitility.Duration;
 import org.junit.Test;
+import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
+import static org.awaitility.Awaitility.await;
+
 public class SSEClientTest extends TestCase {
     @Test
     public void test_sse() throws Exception {
-        SSEClient client = new SSEClient();
+        final SSEClient client = new SSEClient();
 
         final BlockingQueue<Event> events = client.subscribe(TestHelper.createAPI());
 
@@ -23,7 +29,27 @@ public class SSEClientTest extends TestCase {
         assertNotNull(first.getData());
 
         // Expect second event to raise after around 5 seconds (PING or device data)
-        final Event second = events.poll(6, TimeUnit.SECONDS);
+        final Event second = events.poll(10, TimeUnit.SECONDS);
         assertNotNull(second);
+    }
+
+    @Test
+    public void test_sse_reconnect() throws Exception {
+        final SSEClient client = new SSEClient();
+        final List<MieleDevice> devices  = new ArrayList<>();
+
+        new Thread(() -> client.start(TestHelper.createAPI(), devices::add)).start();
+
+        for (int i = 0; i < 2; i++) {
+            await().atMost(Duration.FIVE_SECONDS).until(() -> !devices.isEmpty());
+
+            // Expect initial event to raise immediately
+            final MieleDevice first = devices.get(0);
+            assertNotNull(first);
+            client.testClose();
+            await().atMost(Duration.TEN_SECONDS).until(client::isRunning);
+            devices.clear();
+        }
+
     }
 }

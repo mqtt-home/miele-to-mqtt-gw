@@ -10,16 +10,18 @@ import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.util.concurrent.*;
 import java.util.function.Consumer;
 
 public class SSEClient {
     private static final Logger LOGGER = LoggerFactory.getLogger(SSEClient.class);
     private final ExecutorService executor = Executors.newFixedThreadPool(1);
+    private CloseableHttpAsyncClient asyncClient;
 
     BlockingQueue<Event> subscribe(MieleAPI api) throws Exception {
         LOGGER.debug("Subscribe SSE");
-        final CloseableHttpAsyncClient asyncClient = HttpAsyncClients.createDefault();
+        asyncClient = HttpAsyncClients.createDefault();
         asyncClient.start();
         final SseRequest request = new SseRequest("https://api.mcs3.miele.com/v1/devices/all/events");
         request.setHeader("Accept-Language", "en-GB");
@@ -30,6 +32,14 @@ public class SSEClient {
 
         final SseResponse sseResponse = future.get(10, TimeUnit.SECONDS);
         return sseResponse.getEntity().getEvents();
+    }
+
+    void testClose() throws IOException {
+        asyncClient.close();
+    }
+
+    boolean isRunning() {
+        return asyncClient.isRunning();
     }
 
     public void start(MieleAPI api, Consumer<MieleDevice> consumer) {
