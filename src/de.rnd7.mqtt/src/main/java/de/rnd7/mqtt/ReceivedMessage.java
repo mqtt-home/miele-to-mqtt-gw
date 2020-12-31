@@ -34,4 +34,11 @@ public class ReceivedMessage {
 		return Objects.hash(topic, data);
 	}
 
+	@Override
+	public String toString() {
+		return "ReceivedMessage{" +
+				"topic='" + topic + '\'' +
+				", data='" + data + '\'' +
+				'}';
+	}
 }

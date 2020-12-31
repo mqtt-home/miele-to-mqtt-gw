@@ -12,18 +12,24 @@ public class ConfigMqtt {
     private boolean retain = true;
 
     @SerializedName("message-interval")
-    private Duration pollingInterval;
+    private Duration pollingInterval = Duration.ofMinutes(1);
+
     @SerializedName("full-message-topic")
-    private String fullMessageTopic;
+    private String fullMessageTopic = "miele";
 
     @SerializedName("client-id")
     private String clientId;
 
     public static ConfigMqtt createFor(String host, int port, String fullMessageTopic) {
         final ConfigMqtt config = new ConfigMqtt();
-        config.url = String.format("tcp://%s:%s", host, port);
+        config.setBroker(host, port);
         config.fullMessageTopic = fullMessageTopic;
         return config;
+    }
+
+    public ConfigMqtt setBroker(String host, int port) {
+        this.url = String.format("tcp://%s:%s", host, port);
+        return this;
     }
 
     public String getUrl() {
@@ -46,11 +52,21 @@ public class ConfigMqtt {
         return pollingInterval;
     }
 
+    public ConfigMqtt setPollingInterval(final Duration pollingInterval) {
+        this.pollingInterval = pollingInterval;
+        return this;
+    }
+
     public boolean isRetain() {
         return retain;
     }
 
     public Optional<String> getClientId() {
         return Optional.ofNullable(clientId);
+    }
+
+    public ConfigMqtt setClientId(final String clientId) {
+        this.clientId = clientId;
+        return this;
     }
 }
