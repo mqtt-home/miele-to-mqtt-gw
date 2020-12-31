@@ -113,7 +113,12 @@ public class MieleAPI {
 			post.setEntity(new StringEntity(request));
 
 			try (CloseableHttpResponse response = httpclient.execute(post)) {
-				final Header header = response.getHeaders("Location")[0];
+				final Header[] locations = response.getHeaders("Location");
+				if (locations.length == 0) {
+					throw new IOException("Error during login (fetch code), location header was expected to be set. Please check your credentials.");
+				}
+
+				final Header header = locations[0];
 				final String value = header.getValue();
 
 				final Pattern pattern = Pattern.compile("code=([a-z0-9_]+)", Pattern.CASE_INSENSITIVE);
