@@ -15,6 +15,7 @@ import java.util.stream.Collectors;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.http.Header;
+import org.apache.http.StatusLine;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.StringEntity;
@@ -39,11 +40,13 @@ public class MieleAPI {
 		this.clientSecret = clientSecret;
 		this.username = username;
 		this.password = password;
-
-		this.updateToken();
 	}
 
 	public Token getToken() {
+		if (token == null) {
+			updateToken();
+		}
+
 		return token;
 	}
 
@@ -77,7 +80,7 @@ public class MieleAPI {
 			final String code = this.fetchCode();
 			this.token = this.fetchToken(code);
 		} catch (final IOException e) {
-			LOGGER.error("Error while fetching token", e);
+			throw new RuntimeException("Error while fetching token", e);
 		}
 	}
 
@@ -113,6 +116,12 @@ public class MieleAPI {
 			post.setEntity(new StringEntity(request));
 
 			try (CloseableHttpResponse response = httpclient.execute(post)) {
+				StatusLine statusLine = response.getStatusLine();
+				int code = statusLine.getStatusCode();
+				if (code < 200 || code > 299) {
+					throw new IOException(String.format("Unexpected code: %s during login (%s).", code, statusLine.getReasonPhrase()));
+				}
+
 				final Header[] locations = response.getHeaders("Location");
 				if (locations.length == 0) {
 					throw new IOException("Error during login (fetch code), location header was expected to be set. Please check your credentials.");

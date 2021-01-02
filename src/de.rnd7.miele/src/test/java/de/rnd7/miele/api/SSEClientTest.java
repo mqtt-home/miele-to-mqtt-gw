@@ -2,15 +2,12 @@ package de.rnd7.miele.api;
 
 import junit.framework.TestCase;
 import org.apache.client.sse.Event;
-import org.apache.client.sse.SseResponse;
 import org.awaitility.Duration;
 import org.junit.Test;
-import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 import static org.awaitility.Awaitility.await;
@@ -46,7 +43,7 @@ public class SSEClientTest extends TestCase {
             // Expect initial event to raise immediately
             final MieleDevice first = devices.get(0);
             assertNotNull(first);
-            client.testClose();
+            client.shutdown();
             await().atMost(Duration.TEN_SECONDS).until(client::isRunning);
             devices.clear();
         }

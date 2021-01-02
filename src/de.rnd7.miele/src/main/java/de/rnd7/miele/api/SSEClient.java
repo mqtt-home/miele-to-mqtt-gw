@@ -21,11 +21,12 @@ public class SSEClient {
 
     BlockingQueue<Event> subscribe(MieleAPI api) throws Exception {
         LOGGER.debug("Subscribe SSE");
+        final String token = api.getToken().getAccessToken();
         asyncClient = HttpAsyncClients.createDefault();
         asyncClient.start();
         final SseRequest request = new SseRequest("https://api.mcs3.miele.com/v1/devices/all/events");
         request.setHeader("Accept-Language", "en-GB");
-        request.setHeader("Authorization", "Bearer " + api.getToken().getAccessToken());
+        request.setHeader("Authorization", "Bearer " + token);
         final ApacheHttpSseClient sseClient = new ApacheHttpSseClient(asyncClient, executor);
 
         final Future<SseResponse> future = sseClient.execute(request);
@@ -34,8 +35,16 @@ public class SSEClient {
         return sseResponse.getEntity().getEvents();
     }
 
-    void testClose() throws IOException {
-        asyncClient.close();
+    void shutdown() {
+        if (asyncClient != null) {
+            try {
+                asyncClient.close();
+            } catch (IOException e) {
+                LOGGER.error(e.getMessage(), e);
+            }
+        }
+
+        executor.shutdown();
     }
 
     boolean isRunning() {
@@ -67,11 +76,13 @@ public class SSEClient {
                 LOGGER.error(e.getMessage(), e);
                 try {
                     // Wait one minute after error (e.g. Internet connection down)
-                    Thread.sleep(60_000);
+                    Thread.sleep(2_000);
                     api.updateToken();
                 } catch (InterruptedException interruptedException) {
                     interruptedException.printStackTrace();
                     Thread.currentThread().interrupt();
+                    shutdown();
+                    return;
                 }
             }
         }

@@ -113,4 +113,14 @@ public class GwMqttClient {
 		this.publish(topic, valueString);
 	}
 
+    public void shutdown() {
+		client.ifPresent(c -> {
+			try {
+				c.disconnect();
+				c.close();
+			} catch (MqttException e) {
+				LOGGER.debug(e.getMessage(), e);
+			}
+		});
+    }
 }
