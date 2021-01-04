@@ -33,9 +33,14 @@ public class SSEClientTest extends TestCase {
     @Test
     public void test_sse_reconnect() throws Exception {
         final SSEClient client = new SSEClient();
-        final List<MieleDevice> devices  = new ArrayList<>();
+        final List<MieleDevice> devices = new ArrayList<>();
 
-        new Thread(() -> client.start(TestHelper.createAPI(), devices::add)).start();
+        new Thread(() -> client.start(TestHelper.createAPI(),
+                device -> {
+                    synchronized (devices) {
+                        devices.add(device);
+                    }
+                })).start();
 
         for (int i = 0; i < 2; i++) {
             await().atMost(Duration.FIVE_SECONDS).until(() -> !devices.isEmpty());
@@ -43,9 +48,11 @@ public class SSEClientTest extends TestCase {
             // Expect initial event to raise immediately
             final MieleDevice first = devices.get(0);
             assertNotNull(first);
-            client.shutdown();
-            await().atMost(Duration.TEN_SECONDS).until(client::isRunning);
-            devices.clear();
+            synchronized (devices) {
+                client.closeClient();
+                await().atMost(Duration.TEN_SECONDS).until(client::isRunning);
+                devices.clear();
+            }
         }
 
     }

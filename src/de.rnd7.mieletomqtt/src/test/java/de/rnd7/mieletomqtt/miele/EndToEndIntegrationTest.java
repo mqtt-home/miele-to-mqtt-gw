@@ -16,9 +16,10 @@ import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.wait.strategy.HttpWaitStrategy;
 import org.testcontainers.utility.DockerImageName;
 
+import java.io.File;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
-import java.util.concurrent.Callable;
 import java.util.function.Function;
 
 import static de.rnd7.mieletomqtt.miele.MqttIntegrationTest.MQTT;
@@ -50,7 +51,7 @@ public class EndToEndIntegrationTest {
         final MessageListener listener = createMessageListener();
 
         final Thread thread = new Thread(() -> {
-            new Main(config);
+            new Main(config, Optional.empty());
         });
 
         thread.start();

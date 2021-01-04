@@ -1,5 +1,9 @@
 # ---- Prod ----
 FROM openjdk:8-jdk-alpine
+LABEL maintainer="Philipp Arndt <2f.mail@gmx.de>"
+LABEL version="1.0"
+LABEL description="Miele to mqtt gateway"
+
 RUN mkdir /opt/app
 WORKDIR /opt/app
 COPY src/de.rnd7.mieletomqtt/target/miele-to-mqtt-gw.jar .

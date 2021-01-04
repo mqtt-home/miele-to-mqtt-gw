@@ -36,6 +36,12 @@ public class SSEClient {
     }
 
     void shutdown() {
+        closeClient();
+
+        executor.shutdown();
+    }
+
+    void closeClient() {
         if (asyncClient != null) {
             try {
                 asyncClient.close();
@@ -43,8 +49,6 @@ public class SSEClient {
                 LOGGER.error(e.getMessage(), e);
             }
         }
-
-        executor.shutdown();
     }
 
     boolean isRunning() {

@@ -21,6 +21,8 @@ public class ConfigMiele {
     @SerializedName("mode")
     private Mode mode = Mode.polling;
 
+    private ConfigMieleToken token = new ConfigMieleToken();
+
     public String getClientId() {
         return clientId;
     }
@@ -64,5 +66,13 @@ public class ConfigMiele {
     public ConfigMiele setMode(final Mode mode) {
         this.mode = mode;
         return this;
+    }
+
+    public ConfigMieleToken getToken() {
+        return token;
+    }
+
+    public void setToken(final ConfigMieleToken token) {
+        this.token = token;
     }
 }

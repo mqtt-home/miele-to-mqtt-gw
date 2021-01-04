@@ -8,5 +8,5 @@ services:
     hostname: mielemqtt
     image: pharndt/mielemqtt
     volumes:
-     - ./config:/var/lib/miele-to-mqtt-gw:ro
+     - ./config:/var/lib/miele-to-mqtt-gw:rw
     restart: always 

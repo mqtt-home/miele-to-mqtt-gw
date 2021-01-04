@@ -2,12 +2,16 @@ package de.rnd7.mieletomqtt;
 
 import java.io.File;
 import java.io.IOException;
+import java.time.ZoneId;
+import java.util.Optional;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import de.rnd7.miele.ConfigMiele;
+import de.rnd7.miele.ConfigMieleToken;
 import de.rnd7.miele.api.SSEClient;
+import de.rnd7.mieletomqtt.config.ConfigPersistor;
 import de.rnd7.mqtt.GwMqttClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,19 +27,22 @@ public class Main {
     private static final Logger LOGGER = LoggerFactory.getLogger(Main.class);
 
     @SuppressWarnings("squid:S2189")
-    public Main(final Config config) {
+    public Main(final Config config, final Optional<File> configFile) {
         LOGGER.debug("Debug enabled");
         LOGGER.info("Info enabled");
+
+        if (configFile.isPresent()) {
+            LOGGER.warn("No writable config file available. Login token cannot be persisted.");
+        }
 
         final EventBus eventBus = new EventBus();
         final GwMqttClient mqttClient = new GwMqttClient(config.getMqtt(), eventBus);
         eventBus.register(mqttClient);
 
-        final ConfigMiele miele = config.getMiele();
-        MieleAPI mieleAPI = new MieleAPI(miele.getClientId(), miele.getClientSecret(),
-                miele.getUsername(), miele.getPassword());
+        final MieleAPI mieleAPI = new MieleAPI(config.getMiele())
+                .setTokenListener(new ConfigPersistor(configFile, config));
 
-        final ScheduledExecutorService	 executor = Executors.newScheduledThreadPool(2);
+        final ScheduledExecutorService executor = Executors.newScheduledThreadPool(2);
         executor.scheduleAtFixedRate(mieleAPI::updateToken, 2, 2, TimeUnit.HOURS);
 
         final MieleEventHandler eventHandler = new MieleEventHandler(eventBus, config.isDeduplicate());
@@ -63,7 +70,8 @@ public class Main {
         }
 
         try {
-            new Main(ConfigParser.parse(new File(args[0])));
+            final File configFile = new File(args[0]);
+            new Main(ConfigParser.parse(configFile), Optional.of(configFile).filter(File::canWrite));
         } catch (final IOException e) {
             LOGGER.error(e.getMessage(), e);
         }

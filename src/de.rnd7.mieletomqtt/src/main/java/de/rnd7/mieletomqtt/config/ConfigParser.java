@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.time.ZonedDateTime;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -26,7 +27,8 @@ public class ConfigParser {
 		final String json = IOUtils.toString(in, StandardCharsets.UTF_8);
 
 		final Gson gson = new GsonBuilder()
-				.registerTypeAdapter(Duration.class, new DurationDeserializer())
+				.registerTypeAdapter(Duration.class, new DurationAdapter())
+				.registerTypeAdapter(ZonedDateTime.class, new ZonedDateTimeAdapter())
 				.create();
 
 		return gson.fromJson(json, Config.class);
