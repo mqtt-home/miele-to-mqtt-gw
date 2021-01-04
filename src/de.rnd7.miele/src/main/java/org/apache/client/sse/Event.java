@@ -7,7 +7,7 @@ public class Event {
     private final String data;
     private final int retry;
 
-    public Event(String id, String event, String data, int retry) {
+    public Event(final String id, final String event, final String data, final int retry) {
         this.id = id;
         this.event = event;
         this.data = data;
@@ -32,7 +32,7 @@ public class Event {
 
     @Override
     public String toString() {
-        StringBuilder eventString = new StringBuilder();
+        final StringBuilder eventString = new StringBuilder();
         if (id != null && id.length() > 0) {
             eventString.append("id: ");
             eventString.append(id);

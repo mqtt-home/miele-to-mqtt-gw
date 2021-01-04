@@ -38,7 +38,7 @@ public class Main {
         eventBus.register(mqttClient);
 
         final MieleAPI mieleAPI = new MieleAPI(config.getMiele())
-                .setTokenListener(new ConfigPersistor(configFile, config));
+            .setTokenListener(new ConfigPersistor(configFile, config));
 
         final ScheduledExecutorService executor = Executors.newScheduledThreadPool(2);
         executor.scheduleAtFixedRate(mieleAPI::updateToken, 2, 2, TimeUnit.HOURS);
@@ -51,7 +51,7 @@ public class Main {
                 new SSEClient().start(mieleAPI, eventHandler);
             } else {
                 LOGGER.info("Using Miele polling api");
-                MielePollingHandler handler = new MielePollingHandler(mieleAPI, eventHandler);
+                final MielePollingHandler handler = new MielePollingHandler(mieleAPI, eventHandler);
                 executor.scheduleAtFixedRate(handler::exec, 0, config.getMqtt().getPollingInterval().getSeconds(), TimeUnit.SECONDS);
             }
         } catch (Exception e) {

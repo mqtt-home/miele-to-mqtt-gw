@@ -1,6 +1,5 @@
 package org.apache.client.sse;
 
-import de.rnd7.miele.api.SSEClient;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.concurrent.FutureCallback;
@@ -16,11 +15,10 @@ import java.io.IOException;
 import java.nio.CharBuffer;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Future;
 
 /**
  * https://github.com/manpreet333/apache-sseclient
- *
+ * <p>
  * Wraps the Async client and executes the get request to start listening to event stream in a new thread.
  * To abort the connection from client side, async client should be closed.
  */
@@ -30,42 +28,43 @@ public class ApacheHttpSseClient {
     private final CloseableHttpAsyncClient httpAsyncClient;
     private final ExecutorService executorService;
 
-    public ApacheHttpSseClient(CloseableHttpAsyncClient httpAsyncClient, ExecutorService executorService) {
+    public ApacheHttpSseClient(final CloseableHttpAsyncClient httpAsyncClient, final ExecutorService executorService) {
         this.httpAsyncClient = httpAsyncClient;
         this.executorService = executorService;
     }
 
-    public CompletableFuture<SseResponse> execute(HttpUriRequest request) {
+    public CompletableFuture<SseResponse> execute(final HttpUriRequest request) {
         final CompletableFuture<SseResponse> futureResp = new CompletableFuture<>();
         final AsyncCharConsumer<SseResponse> charConsumer = new AsyncCharConsumer<SseResponse>() { // NOSONAR
             private SseResponse response;
+
             @Override
-            protected void onCharReceived(CharBuffer buf, IOControl ioctrl) throws IOException {
+            protected void onCharReceived(final CharBuffer buf, final IOControl ioctrl) throws IOException {
                 //Push chars buffer to entity for parsing and storage
                 response.getEntity().pushBuffer(buf, ioctrl);
             }
 
             @Override
-            protected void onResponseReceived(HttpResponse response) {
+            protected void onResponseReceived(final HttpResponse response) {
                 this.response = new SseResponse(response);
                 futureResp.complete(this.response);
             }
 
             @Override
-            protected SseResponse buildResult(HttpContext context) throws Exception {
+            protected SseResponse buildResult(final HttpContext context) throws Exception {
                 return response;
             }
         };
 
         final FutureCallback<SseResponse> callback = new FutureCallback<SseResponse>() {
             @Override
-            public void completed(SseResponse result) {
+            public void completed(final SseResponse result) {
                 futureResp.cancel(true);
                 closeQuietly(charConsumer);
             }
 
             @Override
-            public void failed(Exception excObj) {
+            public void failed(final Exception excObj) {
                 LOGGER.error(excObj.getMessage(), excObj);
                 futureResp.completeExceptionally(excObj);
                 closeQuietly(charConsumer);

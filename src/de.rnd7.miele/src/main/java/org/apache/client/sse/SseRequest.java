@@ -13,12 +13,12 @@ public class SseRequest extends HttpGet {
         addHeader("Accept", "text/event-stream");
     }
 
-    public SseRequest(URI uri) {
+    public SseRequest(final URI uri) {
         super(uri);
         addHeader("Accept", "text/event-stream");
     }
 
-    public SseRequest(String uri) {
+    public SseRequest(final String uri) {
         super(uri);
         addHeader("Accept", "text/event-stream");
     }
