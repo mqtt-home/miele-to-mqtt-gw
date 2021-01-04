@@ -17,7 +17,7 @@ jobs:
                     java-version: 8
 
             -   name: Update versions
-                run: mvn versions:set -DgenerateBackupPoms=false -DnewVersion=1.0.${{ github.run_number }}
+                run: mvn versions:set -DgenerateBackupPoms=false -DnewVersion=1.0.${{ github.run_number }} --file src/pom.xml
 
             -   name: Build with Maven
                 env:
