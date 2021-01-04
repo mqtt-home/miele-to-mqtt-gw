@@ -1,6 +1,10 @@
 package org.apache.client.sse;
 
-import org.apache.http.*;
+import org.apache.http.Header;
+import org.apache.http.HeaderIterator;
+import org.apache.http.HttpResponse;
+import org.apache.http.ProtocolVersion;
+import org.apache.http.StatusLine;
 import org.apache.http.message.BasicHttpResponse;
 
 import java.util.Locale;
@@ -10,7 +14,7 @@ public class SseResponse extends BasicHttpResponse {
     private final HttpResponse original;
     private final SseEntity entity;
 
-    public SseResponse(HttpResponse original) {
+    public SseResponse(final HttpResponse original) {
         super(original.getStatusLine());
         this.original = original;
         this.entity = new SseEntity(original.getEntity());
@@ -31,27 +35,27 @@ public class SseResponse extends BasicHttpResponse {
     }
 
     @Override
-    public void setStatusLine(StatusLine statusline) {
+    public void setStatusLine(final StatusLine statusline) {
         original.setStatusLine(statusline);
     }
 
     @Override
-    public void setStatusLine(ProtocolVersion ver, int code) {
+    public void setStatusLine(final ProtocolVersion ver, final int code) {
         original.setStatusLine(ver, code);
     }
 
     @Override
-    public void setStatusLine(ProtocolVersion ver, int code, String reason) {
+    public void setStatusLine(final ProtocolVersion ver, final int code, final String reason) {
         original.setStatusLine(ver, code, reason);
     }
 
     @Override
-    public void setStatusCode(int code) throws IllegalStateException {
+    public void setStatusCode(final int code) throws IllegalStateException {
         original.setStatusCode(code);
     }
 
     @Override
-    public void setReasonPhrase(String reason) throws IllegalStateException {
+    public void setReasonPhrase(final String reason) throws IllegalStateException {
         original.setReasonPhrase(reason);
     }
 
@@ -61,7 +65,7 @@ public class SseResponse extends BasicHttpResponse {
     }
 
     @Override
-    public void setLocale(Locale loc) {
+    public void setLocale(final Locale loc) {
         original.setLocale(loc);
     }
 
@@ -71,22 +75,22 @@ public class SseResponse extends BasicHttpResponse {
     }
 
     @Override
-    public boolean containsHeader(String name) {
+    public boolean containsHeader(final String name) {
         return original.containsHeader(name);
     }
 
     @Override
-    public Header[] getHeaders(String name) {
+    public Header[] getHeaders(final String name) {
         return original.getHeaders(name);
     }
 
     @Override
-    public Header getFirstHeader(String name) {
+    public Header getFirstHeader(final String name) {
         return original.getFirstHeader(name);
     }
 
     @Override
-    public Header getLastHeader(String name) {
+    public Header getLastHeader(final String name) {
         return original.getLastHeader(name);
     }
 
@@ -96,37 +100,37 @@ public class SseResponse extends BasicHttpResponse {
     }
 
     @Override
-    public void addHeader(Header header) {
+    public void addHeader(final Header header) {
         original.addHeader(header);
     }
 
     @Override
-    public void addHeader(String name, String value) {
+    public void addHeader(final String name, final String value) {
         original.addHeader(name, value);
     }
 
     @Override
-    public void setHeader(Header header) {
+    public void setHeader(final Header header) {
         original.setHeader(header);
     }
 
     @Override
-    public void setHeader(String name, String value) {
+    public void setHeader(final String name, final String value) {
         original.setHeader(name, value);
     }
 
     @Override
-    public void setHeaders(Header[] headers) {
+    public void setHeaders(final Header[] headers) {
         original.setHeaders(headers);
     }
 
     @Override
-    public void removeHeader(Header header) {
+    public void removeHeader(final Header header) {
         original.removeHeader(header);
     }
 
     @Override
-    public void removeHeaders(String name) {
+    public void removeHeaders(final String name) {
         original.removeHeaders(name);
     }
 
@@ -136,7 +140,7 @@ public class SseResponse extends BasicHttpResponse {
     }
 
     @Override
-    public HeaderIterator headerIterator(String name) {
+    public HeaderIterator headerIterator(final String name) {
         return original.headerIterator(name);
     }
 }

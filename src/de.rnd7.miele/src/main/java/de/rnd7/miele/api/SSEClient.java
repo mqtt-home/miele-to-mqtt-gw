@@ -11,7 +11,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.concurrent.*;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
 public class SSEClient {
@@ -19,7 +23,7 @@ public class SSEClient {
     private final ExecutorService executor = Executors.newFixedThreadPool(1);
     private CloseableHttpAsyncClient asyncClient;
 
-    BlockingQueue<Event> subscribe(MieleAPI api) throws Exception {
+    BlockingQueue<Event> subscribe(final MieleAPI api) throws Exception {
         LOGGER.debug("Subscribe SSE");
         final String token = api.getToken().getAccessToken();
         asyncClient = HttpAsyncClients.createDefault();
@@ -55,7 +59,7 @@ public class SSEClient {
         return asyncClient.isRunning();
     }
 
-    public void start(MieleAPI api, Consumer<MieleDevice> consumer) {
+    public void start(final MieleAPI api, final Consumer<MieleDevice> consumer) {
         while (true) { // NOSONAR
             try {
                 final BlockingQueue<Event> events = subscribe(api);
@@ -70,9 +74,8 @@ public class SSEClient {
                         final JSONObject devices = new JSONObject(event.getData());
 
                         devices.keySet().stream().map(id -> new MieleDevice(id, devices.getJSONObject(id)))
-                                .forEach(consumer::accept);
-                    }
-                    else if (event.getEvent().equals("ping")) {
+                            .forEach(consumer::accept);
+                    } else if (event.getEvent().equals("ping")) {
                         LOGGER.debug(".");
                     }
                 }

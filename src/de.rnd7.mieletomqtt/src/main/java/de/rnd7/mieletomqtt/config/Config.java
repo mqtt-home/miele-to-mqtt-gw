@@ -5,19 +5,19 @@ import de.rnd7.mqtt.ConfigMqtt;
 
 public class Config {
 
-	private ConfigMqtt mqtt = new ConfigMqtt();
-	private ConfigMiele miele = new ConfigMiele();
-	private boolean deduplicate = false;
+    private ConfigMqtt mqtt = new ConfigMqtt();
+    private ConfigMiele miele = new ConfigMiele();
+    private boolean deduplicate = false;
 
-	public ConfigMqtt getMqtt() {
-		return mqtt;
-	}
+    public ConfigMqtt getMqtt() {
+        return mqtt;
+    }
 
-	public ConfigMiele getMiele() {
-		return miele;
-	}
+    public ConfigMiele getMiele() {
+        return miele;
+    }
 
-	public boolean isDeduplicate() {
-		return deduplicate;
-	}
+    public boolean isDeduplicate() {
+        return deduplicate;
+    }
 }

@@ -29,21 +29,21 @@ import static org.awaitility.Awaitility.await;
 public class EndToEndIntegrationTest {
     @Rule
     public GenericContainer activeMQ = new GenericContainer(DockerImageName.parse("rmohr/activemq:5.15.9"))
-            .withExposedPorts(MQTT, WEBUI)
-            .waitingFor(new HttpWaitStrategy().forPort(WEBUI));
+        .withExposedPorts(MQTT, WEBUI)
+        .waitingFor(new HttpWaitStrategy().forPort(WEBUI));
 
     private Config createDefaultConfig() {
         final Config config = new Config();
         config.getMiele()
-                .setClientId(TestHelper.forceEnv("MIELE_CLIENT_ID"))
-                .setClientSecret(TestHelper.forceEnv("MIELE_CLIENT_SECRET"))
-                .setUsername(TestHelper.forceEnv("MIELE_USERNAME"))
-                .setPassword(TestHelper.forceEnv("MIELE_PASSWORD"));
+            .setClientId(TestHelper.forceEnv("MIELE_CLIENT_ID"))
+            .setClientSecret(TestHelper.forceEnv("MIELE_CLIENT_SECRET"))
+            .setUsername(TestHelper.forceEnv("MIELE_USERNAME"))
+            .setPassword(TestHelper.forceEnv("MIELE_PASSWORD"));
 
         config.getMqtt()
-                .setPollingInterval(java.time.Duration.ofSeconds(2))
-                .setBroker(activeMQ.getHost(), activeMQ.getMappedPort(MQTT))
-                .setClientId(UUID.randomUUID().toString());
+            .setPollingInterval(java.time.Duration.ofSeconds(2))
+            .setBroker(activeMQ.getHost(), activeMQ.getMappedPort(MQTT))
+            .setClientId(UUID.randomUUID().toString());
         return config;
     }
 
@@ -113,18 +113,18 @@ public class EndToEndIntegrationTest {
 
     private ReceivedMessage getSmallMessage(final List<ReceivedMessage> messages) {
         return messages.stream().filter(m -> !m.getTopic().endsWith("/full")).findFirst()
-                .orElseThrow(() -> new IllegalStateException("Expected at least one small message to be present."));
+            .orElseThrow(() -> new IllegalStateException("Expected at least one small message to be present."));
     }
 
     private ReceivedMessage getFullMessage(final List<ReceivedMessage> messages) {
         return messages.stream().filter(m -> m.getTopic().endsWith("/full")).findFirst()
-                .orElseThrow(() -> new IllegalStateException("Expected at least one full message to be present."));
+            .orElseThrow(() -> new IllegalStateException("Expected at least one full message to be present."));
     }
 
     private MessageListener createMessageListener() {
         final EventBus eventBus = new EventBus();
         final GwMqttClient client = new GwMqttClient(
-                new ConfigMqtt().setBroker(activeMQ.getHost(), activeMQ.getMappedPort(MQTT)), eventBus);
+            new ConfigMqtt().setBroker(activeMQ.getHost(), activeMQ.getMappedPort(MQTT)), eventBus);
 
         final MessageListener listener = new MessageListener();
         eventBus.register(listener);

@@ -20,14 +20,14 @@ public class ConfigMqtt {
     @SerializedName("client-id")
     private String clientId;
 
-    public static ConfigMqtt createFor(String host, int port, String fullMessageTopic) {
+    public static ConfigMqtt createFor(final String host, final int port, final String fullMessageTopic) {
         final ConfigMqtt config = new ConfigMqtt();
         config.setBroker(host, port);
         config.fullMessageTopic = fullMessageTopic;
         return config;
     }
 
-    public ConfigMqtt setBroker(String host, int port) {
+    public ConfigMqtt setBroker(final String host, final int port) {
         this.url = String.format("tcp://%s:%s", host, port);
         return this;
     }

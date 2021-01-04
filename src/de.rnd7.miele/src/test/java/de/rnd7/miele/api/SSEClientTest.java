@@ -36,11 +36,11 @@ public class SSEClientTest extends TestCase {
         final List<MieleDevice> devices = new ArrayList<>();
 
         new Thread(() -> client.start(TestHelper.createAPI(),
-                device -> {
-                    synchronized (devices) {
-                        devices.add(device);
-                    }
-                })).start();
+            device -> {
+                synchronized (devices) {
+                    devices.add(device);
+                }
+            })).start();
 
         for (int i = 0; i < 2; i++) {
             await().atMost(Duration.FIVE_SECONDS).until(() -> !devices.isEmpty());

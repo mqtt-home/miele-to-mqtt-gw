@@ -23,19 +23,19 @@ public class ConfigPersistor implements TokenListener {
     private final Optional<File> file;
     private final Config config;
 
-    public ConfigPersistor(Optional<File> file, Config config) {
+    public ConfigPersistor(final Optional<File> file, final Config config) {
         this.file = file;
         this.config = config;
     }
 
     private void persistToken() {
         final Gson gson = new GsonBuilder()
-                .registerTypeAdapter(Duration.class, new DurationAdapter())
-                .registerTypeAdapter(ZonedDateTime.class, new ZonedDateTimeAdapter())
-                .setPrettyPrinting()
-                .create();
+            .registerTypeAdapter(Duration.class, new DurationAdapter())
+            .registerTypeAdapter(ZonedDateTime.class, new ZonedDateTimeAdapter())
+            .setPrettyPrinting()
+            .create();
 
-        file.ifPresent(f-> {
+        file.ifPresent(f -> {
             try {
                 FileUtils.writeStringToFile(f, gson.toJson(config), StandardCharsets.UTF_8);
             } catch (IOException e) {

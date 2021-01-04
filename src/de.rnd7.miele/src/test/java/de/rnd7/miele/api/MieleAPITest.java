@@ -63,8 +63,8 @@ public class MieleAPITest extends TestCase {
         assertFalse("Expected at least one device", devices.isEmpty());
         final MieleDevice dishwasher = devices.iterator().next();
         assertFalse("Expected device name to be non-empty", dishwasher.getData()
-                .getJSONObject("ident")
-                .getJSONObject("deviceIdentLabel")
-                .get("techType").toString().isEmpty());
+            .getJSONObject("ident")
+            .getJSONObject("deviceIdentLabel")
+            .get("techType").toString().isEmpty());
     }
 }

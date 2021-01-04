@@ -42,16 +42,16 @@ public class FinalJarIntegrationTest {
         final String java = System.getProperty("java.home") + "/bin/java";
 
         return new ProcessBuilder(java,
-                "-jar", finalJar.getAbsolutePath()
+            "-jar", finalJar.getAbsolutePath()
         )
-        .start();
+            .start();
     }
 
     private String consumeInputStream(final Process process) throws IOException {
         final StringBuilder sb = new StringBuilder();
         try (final BufferedReader in = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
             String s = "";
-            while((s = in.readLine()) != null){
+            while ((s = in.readLine()) != null) {
                 sb.append(s);
                 sb.append(System.lineSeparator());
             }

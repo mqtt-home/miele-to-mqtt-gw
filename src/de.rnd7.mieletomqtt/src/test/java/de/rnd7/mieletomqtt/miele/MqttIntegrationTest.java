@@ -21,14 +21,14 @@ public class MqttIntegrationTest {
 
     @Rule
     public GenericContainer activeMQ = new GenericContainer(DockerImageName.parse("rmohr/activemq:5.15.9"))
-            .withExposedPorts(MQTT, WEBUI)
-            .waitingFor(new HttpWaitStrategy().forPort(WEBUI));
+        .withExposedPorts(MQTT, WEBUI)
+        .waitingFor(new HttpWaitStrategy().forPort(WEBUI));
 
     @Test
     public void testMqtt() throws Exception {
         final EventBus eventBus = new EventBus();
         final GwMqttClient client = new GwMqttClient(
-                ConfigMqtt.createFor(activeMQ.getHost(), activeMQ.getMappedPort(MQTT), "home/miele"), eventBus);
+            ConfigMqtt.createFor(activeMQ.getHost(), activeMQ.getMappedPort(MQTT), "home/miele"), eventBus);
 
         final MessageListener listener = new MessageListener();
         eventBus.register(listener);

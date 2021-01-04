@@ -14,7 +14,7 @@ public class MieleEventHandler implements Consumer<MieleDevice> {
 
     private final Map<String, String> messages = new HashMap<>();
 
-    public MieleEventHandler(EventBus eventBus, boolean deduplicate) {
+    public MieleEventHandler(final EventBus eventBus, final boolean deduplicate) {
         this.eventBus = eventBus;
         this.deduplicate = deduplicate;
     }

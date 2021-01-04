@@ -1,6 +1,5 @@
 package de.rnd7.miele;
 
-import java.time.LocalDateTime;
 import java.time.ZonedDateTime;
 
 public class ConfigMieleToken {

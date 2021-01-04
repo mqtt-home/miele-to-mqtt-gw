@@ -11,7 +11,7 @@ public class MielePollingHandler {
     private MieleAPI mieleAPI;
     private MieleEventHandler handler;
 
-    public MielePollingHandler(MieleAPI mieleAPI, MieleEventHandler handler) {
+    public MielePollingHandler(final MieleAPI mieleAPI, final MieleEventHandler handler) {
         this.mieleAPI = mieleAPI;
         this.handler = handler;
     }

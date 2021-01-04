@@ -21,17 +21,17 @@ public class SseEntity extends AbstractHttpEntity {
     private String lastEventId;
     private final HttpEntity original;
 
-    public SseEntity(HttpEntity original) {
+    public SseEntity(final HttpEntity original) {
         this.original = original;
     }
 
-    public void pushBuffer(CharBuffer buf, IOControl ioctrl) {
+    public void pushBuffer(final CharBuffer buf, final IOControl ioctrl) {
         while (buf.hasRemaining()) {
             processChar(buf.get());
         }
     }
 
-    private void processChar(char nextChar) {
+    private void processChar(final char nextChar) {
         if (nextChar == '\n') {
             newLineCount++;
         } else {
@@ -48,17 +48,17 @@ public class SseEntity extends AbstractHttpEntity {
     //Parse raw data for each event to create processed event object
     //Parsing specification - https://www.w3.org/TR/eventsource/#parsing-an-event-stream
     private void processCurrentEvent() {
-        String rawEvent = currentEvent.toString();
+        final String rawEvent = currentEvent.toString();
         String id = "";
         String event = "";
         int retry = 0;
-        StringBuilder data = new StringBuilder();
+        final StringBuilder data = new StringBuilder();
 
         final Splitter splitter = Splitter.on(System.getProperty("line.separator"))
-                .trimResults()
-                .omitEmptyStrings();
+            .trimResults()
+            .omitEmptyStrings();
 
-        for (String[] lineTokens: splitter.splitToStream(rawEvent).map(s -> s.split(":", 2)).collect(Collectors.toList())) {
+        for (String[] lineTokens : splitter.splitToStream(rawEvent).map(s -> s.split(":", 2)).collect(Collectors.toList())) {
             switch (lineTokens[0]) {
                 case "id":
                     id = lineTokens[1].trim();
@@ -108,7 +108,7 @@ public class SseEntity extends AbstractHttpEntity {
     }
 
     @Override
-    public void writeTo(OutputStream outStream) throws IOException {
+    public void writeTo(final OutputStream outStream) throws IOException {
         original.writeTo(outStream);
     }
 
