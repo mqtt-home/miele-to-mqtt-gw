@@ -20,6 +20,8 @@ import java.util.function.Consumer;
 
 public class SSEClient {
     private static final Logger LOGGER = LoggerFactory.getLogger(SSEClient.class);
+    public static final int TIMEOUT = 500;
+    public static final int MAX_RETRY_CTR = 10_000 / TIMEOUT;
     private final ExecutorService executor = Executors.newFixedThreadPool(1);
     private CloseableHttpAsyncClient asyncClient;
 
@@ -64,19 +66,30 @@ public class SSEClient {
             try {
                 final BlockingQueue<Event> events = subscribe(api);
 
+                int noMessageCtr = 0;
+
                 while (true) {
-                    final Event event = events.poll(6, TimeUnit.SECONDS);
-                    if (event == null) {
+                    final Event event = events.poll(TIMEOUT, TimeUnit.MILLISECONDS);
+                    if (!asyncClient.isRunning()) {
                         break;
                     }
 
-                    if (event.getEvent().equals("devices")) {
-                        final JSONObject devices = new JSONObject(event.getData());
+                    if (event != null) {
+                        if (event.getEvent().equals("devices")) {
+                            final JSONObject devices = new JSONObject(event.getData());
 
-                        devices.keySet().stream().map(id -> new MieleDevice(id, devices.getJSONObject(id)))
-                            .forEach(consumer::accept);
-                    } else if (event.getEvent().equals("ping")) {
-                        LOGGER.debug(".");
+                            devices.keySet().stream().map(id -> new MieleDevice(id, devices.getJSONObject(id)))
+                                .forEach(consumer::accept);
+                        } else if (event.getEvent().equals("ping")) {
+                            LOGGER.debug(".");
+                        }
+                    }
+                    else {
+                        if (noMessageCtr >= MAX_RETRY_CTR) {
+                            // No message for more than 10s (not even ping) - try reconnect.
+                            break;
+                        }
+                        noMessageCtr++;
                     }
                 }
             } catch (Exception e) {

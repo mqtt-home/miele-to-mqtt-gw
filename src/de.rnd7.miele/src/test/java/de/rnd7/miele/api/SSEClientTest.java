@@ -42,7 +42,7 @@ public class SSEClientTest extends TestCase {
                 }
             })).start();
 
-        for (int i = 0; i < 2; i++) {
+        for (int i = 0; i < 3; i++) {
             await().atMost(Duration.ofSeconds(5)).until(() -> !devices.isEmpty());
 
             // Expect initial event to raise immediately
