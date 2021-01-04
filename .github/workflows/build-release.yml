@@ -16,6 +16,9 @@ jobs:
                 with:
                     java-version: 8
 
+            -   name: Update versions
+                run: mvn versions:set -DgenerateBackupPoms=false -DnewVersion=1.0.${{ github.run_number }}
+
             -   name: Build with Maven
                 env:
                     MIELE_CLIENT_ID: ${{ secrets.MIELE_CLIENT_ID }}

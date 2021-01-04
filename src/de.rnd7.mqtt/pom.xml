@@ -6,11 +6,11 @@
     <parent>
         <groupId>de.rnd7.mieletomqtt</groupId>
         <artifactId>de.rnd7.mieletomqtt.parent</artifactId>
-        <version>0.0.1-SNAPSHOT</version>
+        <version>1-SNAPSHOT</version>
     </parent>
 
     <artifactId>de.rnd7.mqtt</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
+    <version>1-SNAPSHOT</version>
 
     <dependencies>
         <!-- https://mvnrepository.com/artifact/org.apache.commons/commons-text -->
