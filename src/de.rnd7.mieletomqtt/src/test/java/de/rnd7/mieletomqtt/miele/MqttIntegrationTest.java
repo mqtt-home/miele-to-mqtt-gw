@@ -5,13 +5,14 @@ import de.rnd7.mqtt.ConfigMqtt;
 import de.rnd7.mqtt.GwMqttClient;
 import de.rnd7.mqtt.Message;
 import de.rnd7.mqtt.ReceivedMessage;
-import org.awaitility.Duration;
 import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.wait.strategy.HttpWaitStrategy;
 import org.testcontainers.utility.DockerImageName;
+
+import java.time.Duration;
 
 import static org.awaitility.Awaitility.await;
 
@@ -37,7 +38,7 @@ public class MqttIntegrationTest {
 
         eventBus.post(new Message("hi/there", "message"));
 
-        await().atMost(Duration.TEN_SECONDS).until(() -> !listener.getMessages().isEmpty());
+        await().atMost(Duration.ofSeconds(10)).until(() -> !listener.getMessages().isEmpty());
 
         Assert.assertEquals(1, listener.getMessages().size());
         ReceivedMessage message = listener.getMessages().iterator().next();
