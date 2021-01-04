@@ -1,5 +1,7 @@
 package de.rnd7.miele.api;
 
+import de.rnd7.miele.ConfigMiele;
+
 import java.util.Objects;
 
 public class TestHelper {
@@ -21,11 +23,16 @@ public class TestHelper {
     }
 
     public static MieleAPI createAPI() {
-        return new MieleAPI(
-                forceEnv("MIELE_CLIENT_ID"),
-                forceEnv("MIELE_CLIENT_SECRET"),
-                forceEnv("MIELE_USERNAME"),
-                forceEnv("MIELE_PASSWORD")
-        );
+        ConfigMiele configMiele = createConfig();
+
+        return new MieleAPI(configMiele);
+    }
+
+    public static ConfigMiele createConfig() {
+        return new ConfigMiele()
+                .setClientId(forceEnv("MIELE_CLIENT_ID"))
+                .setClientSecret(forceEnv("MIELE_CLIENT_SECRET"))
+                .setUsername(forceEnv("MIELE_USERNAME"))
+                .setPassword(forceEnv("MIELE_PASSWORD"));
     }
 }

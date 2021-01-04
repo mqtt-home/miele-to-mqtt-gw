@@ -5,8 +5,8 @@ import de.rnd7.mqtt.ConfigMqtt;
 
 public class Config {
 
-	private ConfigMqtt mqtt;
-	private ConfigMiele miele;
+	private ConfigMqtt mqtt = new ConfigMqtt();
+	private ConfigMiele miele = new ConfigMiele();
 	private boolean deduplicate = false;
 
 	public ConfigMqtt getMqtt() {

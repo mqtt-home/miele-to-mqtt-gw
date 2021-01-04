@@ -6,15 +6,18 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
+import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import de.rnd7.miele.ConfigMiele;
+import de.rnd7.miele.ConfigMieleToken;
 import org.apache.commons.io.IOUtils;
 import org.apache.http.Header;
+import org.apache.http.StatusLine;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.StringEntity;
@@ -34,16 +37,33 @@ public class MieleAPI {
 	private final String password;
 	private Token token;
 
-	public MieleAPI(final String clientId, final String clientSecret, final String username, final String password) {
-		this.clientId = clientId;
-		this.clientSecret = clientSecret;
-		this.username = username;
-		this.password = password;
+	private TokenListener tokenListener;
 
-		this.updateToken();
+	public MieleAPI(ConfigMiele config) {
+		this.clientId = config.getClientId();
+		this.clientSecret = config.getClientSecret();
+		this.username = config.getUsername();
+		this.password = config.getPassword();
+
+		final ConfigMieleToken ctoken = config.getToken();
+		if (ctoken != null && ctoken.isValid()) {
+			refreshToken(new Token()
+					.setAccessToken(ctoken.getAccess())
+					.setRefreshToken(ctoken.getRefresh())
+					.setExpiresAt(ctoken.getValidUntil().toLocalDateTime()));
+		}
+	}
+
+	public MieleAPI setTokenListener(final TokenListener tokenListener) {
+		this.tokenListener = tokenListener;
+		return this;
 	}
 
 	public Token getToken() {
+		if (token == null) {
+			updateToken();
+		}
+
 		return token;
 	}
 
@@ -72,12 +92,37 @@ public class MieleAPI {
 		}
 	}
 
+	private boolean refreshToken(Token toBeRefreshed) {
+		if (toBeRefreshed != null && toBeRefreshed.getExpiresAt().isAfter(LocalDateTime.now())) {
+			try {
+				setToken(refreshToken(toBeRefreshed.getRefreshToken()));
+				return true;
+			} catch (IOException e) {
+				LOGGER.error("Cannot refresh token", e);
+			}
+		}
+
+		return false;
+	}
+
 	public void updateToken() {
 		try {
+			if (refreshToken(this.token)) {
+				return;
+			}
+
 			final String code = this.fetchCode();
-			this.token = this.fetchToken(code);
+			setToken(this.fetchToken(code));
 		} catch (final IOException e) {
-			LOGGER.error("Error while fetching token", e);
+			throw new RuntimeException("Error while fetching token", e);
+		}
+	}
+
+	public void setToken(final Token token) {
+		this.token = token;
+
+		if (tokenListener != null) {
+			tokenListener.acceptToken(this.token);
 		}
 	}
 
@@ -100,6 +145,43 @@ public class MieleAPI {
 		}
 	}
 
+	private Token refreshToken(final String refreshToken) throws IOException {
+		try (CloseableHttpClient httpclient = HttpClients.createDefault()) {
+			final String request = String.format(
+					"client_id=%s&client_secret=%s&refresh_token=%s&grant_type=refresh_token",
+					this.clientId, this.clientSecret, refreshToken);
+
+			final HttpPost post = new HttpPost("https://api.mcs3.miele.com/thirdparty/token");
+			post.setHeader("Content-Type", "application/x-www-form-urlencoded");
+			post.setEntity(new StringEntity(request));
+
+			try (CloseableHttpResponse response = httpclient.execute(post)) {
+				final String page = EntityUtils.toString(response.getEntity(), StandardCharsets.UTF_8);
+				final int statusCode = response.getStatusLine().getStatusCode();
+				if (statusCode == 401) {
+					throw new IOException("401 - " + getMessage(page));
+				}
+				else if (statusCode == 200) {
+					return Token.from(new JSONObject(page));
+				}
+				else {
+					throw new IOException("Unexpected status code while refreshing token: " + statusCode);
+				}
+			}
+		}
+	}
+
+	private String getMessage(String page) {
+		try {
+			return new JSONObject(page).getString("message");
+		}
+		catch (Exception e) {
+			LOGGER.trace(e.getMessage(), e);
+		}
+
+		return "no message";
+	}
+
 	private String fetchCode() throws IOException {
 		try (CloseableHttpClient httpclient = HttpClients.createDefault()) {
 			final String request = String.format(
@@ -113,7 +195,18 @@ public class MieleAPI {
 			post.setEntity(new StringEntity(request));
 
 			try (CloseableHttpResponse response = httpclient.execute(post)) {
-				final Header header = response.getHeaders("Location")[0];
+				StatusLine statusLine = response.getStatusLine();
+				int code = statusLine.getStatusCode();
+				if (code != 302) {
+					throw new IOException(String.format("Unexpected code: %s during login (%s).", code, statusLine.getReasonPhrase()));
+				}
+
+				final Header[] locations = response.getHeaders("Location");
+				if (locations.length == 0) {
+					throw new IOException("Error during login (fetch code), location header was expected to be set. Please check your credentials.");
+				}
+
+				final Header header = locations[0];
 				final String value = header.getValue();
 
 				final Pattern pattern = Pattern.compile("code=([a-z0-9_]+)", Pattern.CASE_INSENSITIVE);
@@ -122,7 +215,7 @@ public class MieleAPI {
 				if (matcher.find()) {
 					return matcher.group(1);
 				} else {
-					return null;
+					throw new IOException("Error during login (fetch code), no code found.");
 				}
 			}
 		}

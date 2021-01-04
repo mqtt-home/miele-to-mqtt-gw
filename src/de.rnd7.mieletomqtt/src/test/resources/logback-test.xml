@@ -1,0 +1,7 @@
+<configuration>
+    <root level="info">
+        <!-- Disable Logging during tests.
+        It is expected and intended, that som errors are logged when closing connections. -->
+        <!--appender-ref ref="STDOUT" /-->
+    </root>
+</configuration>

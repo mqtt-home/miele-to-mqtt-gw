@@ -10,26 +10,49 @@ import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.util.concurrent.*;
 import java.util.function.Consumer;
 
 public class SSEClient {
     private static final Logger LOGGER = LoggerFactory.getLogger(SSEClient.class);
     private final ExecutorService executor = Executors.newFixedThreadPool(1);
+    private CloseableHttpAsyncClient asyncClient;
 
     BlockingQueue<Event> subscribe(MieleAPI api) throws Exception {
         LOGGER.debug("Subscribe SSE");
-        final CloseableHttpAsyncClient asyncClient = HttpAsyncClients.createDefault();
+        final String token = api.getToken().getAccessToken();
+        asyncClient = HttpAsyncClients.createDefault();
         asyncClient.start();
         final SseRequest request = new SseRequest("https://api.mcs3.miele.com/v1/devices/all/events");
         request.setHeader("Accept-Language", "en-GB");
-        request.setHeader("Authorization", "Bearer " + api.getToken().getAccessToken());
+        request.setHeader("Authorization", "Bearer " + token);
         final ApacheHttpSseClient sseClient = new ApacheHttpSseClient(asyncClient, executor);
 
         final Future<SseResponse> future = sseClient.execute(request);
 
         final SseResponse sseResponse = future.get(10, TimeUnit.SECONDS);
         return sseResponse.getEntity().getEvents();
+    }
+
+    void shutdown() {
+        closeClient();
+
+        executor.shutdown();
+    }
+
+    void closeClient() {
+        if (asyncClient != null) {
+            try {
+                asyncClient.close();
+            } catch (IOException e) {
+                LOGGER.error(e.getMessage(), e);
+            }
+        }
+    }
+
+    boolean isRunning() {
+        return asyncClient.isRunning();
     }
 
     public void start(MieleAPI api, Consumer<MieleDevice> consumer) {
@@ -57,11 +80,13 @@ public class SSEClient {
                 LOGGER.error(e.getMessage(), e);
                 try {
                     // Wait one minute after error (e.g. Internet connection down)
-                    Thread.sleep(60_000);
+                    Thread.sleep(2_000);
                     api.updateToken();
                 } catch (InterruptedException interruptedException) {
                     interruptedException.printStackTrace();
                     Thread.currentThread().interrupt();
+                    shutdown();
+                    return;
                 }
             }
         }

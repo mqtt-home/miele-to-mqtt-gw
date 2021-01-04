@@ -21,23 +21,58 @@ public class ConfigMiele {
     @SerializedName("mode")
     private Mode mode = Mode.polling;
 
+    private ConfigMieleToken token = new ConfigMieleToken();
+
     public String getClientId() {
         return clientId;
+    }
+
+    public ConfigMiele setClientId(final String clientId) {
+        this.clientId = clientId;
+        return this;
     }
 
     public String getClientSecret() {
         return clientSecret;
     }
 
+    public ConfigMiele setClientSecret(final String clientSecret) {
+        this.clientSecret = clientSecret;
+        return this;
+    }
+
     public String getPassword() {
         return password;
+    }
+
+    public ConfigMiele setPassword(final String password) {
+        this.password = password;
+        return this;
     }
 
     public String getUsername() {
         return username;
     }
 
+    public ConfigMiele setUsername(final String username) {
+        this.username = username;
+        return this;
+    }
+
     public Mode getMode() {
         return mode;
+    }
+
+    public ConfigMiele setMode(final Mode mode) {
+        this.mode = mode;
+        return this;
+    }
+
+    public ConfigMieleToken getToken() {
+        return token;
+    }
+
+    public void setToken(final ConfigMieleToken token) {
+        this.token = token;
     }
 }

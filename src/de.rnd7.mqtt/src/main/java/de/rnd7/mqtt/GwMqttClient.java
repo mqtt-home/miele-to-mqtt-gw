@@ -1,7 +1,10 @@
 package de.rnd7.mqtt;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 
+import com.google.common.eventbus.EventBus;
 import org.eclipse.paho.client.mqttv3.*;
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
 import org.slf4j.Logger;
@@ -18,12 +21,24 @@ public class GwMqttClient {
 	private final MemoryPersistence persistence = new MemoryPersistence();
 	private final Object mutex = new Object();
 	private final ConfigMqtt config;
+	private EventBus eventBus;
 
 	private Optional<MqttClient> client;
 
-	public GwMqttClient(final ConfigMqtt config) {
+	public
+	GwMqttClient(final ConfigMqtt config, EventBus eventBus) {
 		this.config = config;
+		this.eventBus = eventBus;
 		this.client = this.connect();
+	}
+
+	public void subscribe(String topic) {
+		final MqttClient mqtt = client.orElseThrow(() -> new IllegalStateException("Cannot subscribe, no client available"));
+		try {
+			mqtt.subscribe(topic);
+		} catch (MqttException e) {
+			throw new RuntimeException(e);
+		}
 	}
 
 	private Optional<MqttClient> connect() {
@@ -41,7 +56,7 @@ public class GwMqttClient {
 
 				@Override
 				public void messageArrived(String topic, MqttMessage message) throws Exception {
-					// do nothing
+					eventBus.post(new ReceivedMessage(topic, new String(message.getPayload())));
 				}
 
 				@Override
@@ -98,4 +113,14 @@ public class GwMqttClient {
 		this.publish(topic, valueString);
 	}
 
+    public void shutdown() {
+		client.ifPresent(c -> {
+			try {
+				c.disconnect();
+				c.close();
+			} catch (MqttException e) {
+				LOGGER.debug(e.getMessage(), e);
+			}
+		});
+    }
 }
