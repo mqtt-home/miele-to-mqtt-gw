@@ -31,7 +31,7 @@ public class Main {
         LOGGER.debug("Debug enabled");
         LOGGER.info("Info enabled");
 
-        if (configFile.isPresent()) {
+        if (!configFile.isPresent()) {
             LOGGER.warn("No writable config file available. Login token cannot be persisted.");
         }
 
