@@ -5,9 +5,7 @@ import com.google.gson.GsonBuilder;
 import de.rnd7.miele.ConfigMieleToken;
 import de.rnd7.miele.api.Token;
 import de.rnd7.miele.api.TokenListener;
-import de.rnd7.mieletomqtt.Main;
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

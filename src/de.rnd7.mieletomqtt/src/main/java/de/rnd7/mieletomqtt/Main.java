@@ -2,14 +2,12 @@ package de.rnd7.mieletomqtt;
 
 import java.io.File;
 import java.io.IOException;
-import java.time.ZoneId;
 import java.util.Optional;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import de.rnd7.miele.ConfigMiele;
-import de.rnd7.miele.ConfigMieleToken;
 import de.rnd7.miele.api.SSEClient;
 import de.rnd7.mieletomqtt.config.ConfigPersistor;
 import de.rnd7.mqtt.GwMqttClient;

@@ -1,7 +1,5 @@
 package de.rnd7.mqtt;
 
-import org.json.JSONObject;
-
 import java.util.Objects;
 
 public class Message {

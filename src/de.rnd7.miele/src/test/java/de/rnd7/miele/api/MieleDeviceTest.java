@@ -1,6 +1,5 @@
 package de.rnd7.miele.api;
 
-import com.google.gson.Gson;
 import junit.framework.TestCase;
 import org.apache.commons.io.IOUtils;
 import org.json.JSONObject;

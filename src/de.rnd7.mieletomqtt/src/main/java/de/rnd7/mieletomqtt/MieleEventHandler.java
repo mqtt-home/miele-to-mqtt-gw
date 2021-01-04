@@ -1,16 +1,11 @@
 package de.rnd7.mieletomqtt;
 
 import com.google.common.eventbus.EventBus;
-import de.rnd7.miele.api.MieleAPI;
 import de.rnd7.miele.api.MieleDevice;
 import de.rnd7.mqtt.Message;
-import org.json.JSONObject;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
 import java.util.function.Consumer;
 
 public class MieleEventHandler implements Consumer<MieleDevice> {

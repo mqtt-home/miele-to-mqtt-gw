@@ -1,7 +1,5 @@
 package de.rnd7.mqtt;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Optional;
 
 import com.google.common.eventbus.EventBus;
