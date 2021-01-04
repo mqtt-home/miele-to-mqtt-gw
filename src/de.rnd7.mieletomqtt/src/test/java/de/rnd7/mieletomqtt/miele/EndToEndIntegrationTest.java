@@ -7,7 +7,6 @@ import de.rnd7.mieletomqtt.config.Config;
 import de.rnd7.mqtt.ConfigMqtt;
 import de.rnd7.mqtt.GwMqttClient;
 import de.rnd7.mqtt.ReceivedMessage;
-import org.awaitility.Duration;
 import org.json.JSONObject;
 import org.junit.Assert;
 import org.junit.Rule;
@@ -17,6 +16,7 @@ import org.testcontainers.containers.wait.strategy.HttpWaitStrategy;
 import org.testcontainers.utility.DockerImageName;
 
 import java.io.File;
+import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -57,7 +57,7 @@ public class EndToEndIntegrationTest {
         thread.start();
 
         // Wait for at least two messages
-        await().atMost(Duration.TEN_SECONDS).until(() -> endCondition.apply(listener.getMessages().size()));
+        await().atMost(Duration.ofSeconds(10)).until(() -> endCondition.apply(listener.getMessages().size()));
 
         thread.interrupt();
 

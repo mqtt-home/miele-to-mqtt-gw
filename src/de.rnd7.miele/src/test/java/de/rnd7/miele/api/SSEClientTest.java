@@ -2,9 +2,9 @@ package de.rnd7.miele.api;
 
 import junit.framework.TestCase;
 import org.apache.client.sse.Event;
-import org.awaitility.Duration;
 import org.junit.Test;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
@@ -43,14 +43,14 @@ public class SSEClientTest extends TestCase {
             })).start();
 
         for (int i = 0; i < 2; i++) {
-            await().atMost(Duration.FIVE_SECONDS).until(() -> !devices.isEmpty());
+            await().atMost(Duration.ofSeconds(5)).until(() -> !devices.isEmpty());
 
             // Expect initial event to raise immediately
             final MieleDevice first = devices.get(0);
             assertNotNull(first);
             synchronized (devices) {
                 client.closeClient();
-                await().atMost(Duration.TEN_SECONDS).until(client::isRunning);
+                await().atMost(Duration.ofSeconds(10)).until(client::isRunning);
                 devices.clear();
             }
         }
