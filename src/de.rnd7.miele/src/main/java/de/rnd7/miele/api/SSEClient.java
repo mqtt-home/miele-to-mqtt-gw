@@ -20,7 +20,7 @@ import java.util.function.Consumer;
 
 public class SSEClient {
     private static final Logger LOGGER = LoggerFactory.getLogger(SSEClient.class);
-    public static final int TIMEOUT = 500;
+    public static final int TIMEOUT = 1000;
     public static final int MAX_RETRY_CTR = 10_000 / TIMEOUT;
     private final ExecutorService executor = Executors.newFixedThreadPool(1);
     private CloseableHttpAsyncClient asyncClient;
@@ -70,11 +70,8 @@ public class SSEClient {
 
                 while (true) {
                     final Event event = events.poll(TIMEOUT, TimeUnit.MILLISECONDS);
-                    if (!asyncClient.isRunning()) {
-                        break;
-                    }
-
                     if (event != null) {
+                        noMessageCtr = 0;
                         if (event.getEvent().equals("devices")) {
                             final JSONObject devices = new JSONObject(event.getData());
 
@@ -84,11 +81,13 @@ public class SSEClient {
                             LOGGER.debug(".");
                         }
                     }
+                    else if (noMessageCtr >= MAX_RETRY_CTR || !asyncClient.isRunning()) {
+                        // No message for more than 10s (not even ping) - try reconnect.
+                        asyncClient.close();
+                        events.stream().close();
+                        break;
+                    }
                     else {
-                        if (noMessageCtr >= MAX_RETRY_CTR) {
-                            // No message for more than 10s (not even ping) - try reconnect.
-                            break;
-                        }
                         noMessageCtr++;
                     }
                 }
@@ -96,7 +95,7 @@ public class SSEClient {
                 LOGGER.error(e.getMessage(), e);
                 try {
                     // Wait one minute after error (e.g. Internet connection down)
-                    Thread.sleep(2_000);
+                    Thread.sleep(60_000);
                     api.updateToken();
                 } catch (InterruptedException interruptedException) {
                     interruptedException.printStackTrace();
