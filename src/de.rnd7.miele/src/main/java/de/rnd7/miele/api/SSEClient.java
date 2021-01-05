@@ -17,8 +17,6 @@ import java.util.function.Consumer;
 
 public class SSEClient {
     private static final Logger LOGGER = LoggerFactory.getLogger(SSEClient.class);
-    public static final int TIMEOUT = 1000;
-    public static final int MAX_RETRY_CTR = 10_000 / TIMEOUT;
     private final ExecutorService executor = Executors.newFixedThreadPool(1);
     private CloseableHttpAsyncClient asyncClient;
 
