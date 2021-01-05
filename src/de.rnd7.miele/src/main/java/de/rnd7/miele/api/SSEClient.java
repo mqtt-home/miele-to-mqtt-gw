@@ -95,7 +95,7 @@ public class SSEClient {
                 LOGGER.error(e.getMessage(), e);
                 try {
                     // Wait one minute after error (e.g. Internet connection down)
-                    Thread.sleep(2_000);
+                    Thread.sleep(60_000);
                     api.updateToken();
                 } catch (InterruptedException interruptedException) {
                     interruptedException.printStackTrace();
