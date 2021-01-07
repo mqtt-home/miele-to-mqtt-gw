@@ -1,4 +1,5 @@
 # miele-to-mqtt-gw
+[![mqtt-smarthome](https://img.shields.io/badge/mqtt-smarthome-blue.svg)](https://github.com/mqtt-smarthome/mqtt-smarthome)
 
 Convert the miele@home data to mqtt messages
 
