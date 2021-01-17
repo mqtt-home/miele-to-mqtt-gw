@@ -36,7 +36,7 @@ public class MielePollingHandler {
         }
     }
 
-    public void start(long seconds) {
+    public void start(final long seconds) {
         executor.scheduleAtFixedRate(this::exec, 0, seconds, TimeUnit.SECONDS);
 
         while (!executor.isTerminated()) {
