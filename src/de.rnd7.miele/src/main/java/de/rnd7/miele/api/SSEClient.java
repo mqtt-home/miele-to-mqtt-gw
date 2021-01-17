@@ -93,13 +93,8 @@ public class SSEClient {
                 }
             } catch (Exception e) {
                 LOGGER.error(e.getMessage(), e);
-                try {
-                    // Wait one minute after error (e.g. Internet connection down)
-                    Thread.sleep(60_000);
-                    api.updateToken();
-                } catch (InterruptedException interruptedException) {
-                    interruptedException.printStackTrace();
-                    Thread.currentThread().interrupt();
+
+                if (!api.waitReconnect()) {
                     shutdown();
                     return;
                 }

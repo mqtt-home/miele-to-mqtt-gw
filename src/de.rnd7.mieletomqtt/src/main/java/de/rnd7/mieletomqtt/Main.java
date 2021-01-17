@@ -41,21 +41,31 @@ public class Main {
             .setTokenListener(new ConfigPersistor(configFile, config));
 
         final ScheduledExecutorService executor = Executors.newScheduledThreadPool(2);
-        executor.scheduleAtFixedRate(mieleAPI::updateToken, 2, 2, TimeUnit.HOURS);
+        executor.scheduleAtFixedRate(() -> {
+            try {
+                mieleAPI.updateToken();
+            } catch (IOException e) {
+                LOGGER.error("Error updating token: {}", e.getMessage(), e);
+            }
+        }, 2, 2, TimeUnit.HOURS);
 
         final MieleEventHandler eventHandler = new MieleEventHandler(eventBus, config.isDeduplicate());
 
         try {
             if (config.getMiele().getMode() == ConfigMiele.Mode.sse) {
                 LOGGER.info("Using Miele SSE api");
-                new SSEClient().start(mieleAPI, eventHandler);
+                new SSEClient()
+                    .start(mieleAPI, eventHandler);
+
             } else {
                 LOGGER.info("Using Miele polling api");
-                final MielePollingHandler handler = new MielePollingHandler(mieleAPI, eventHandler);
-                executor.scheduleAtFixedRate(handler::exec, 0, config.getMqtt().getPollingInterval().getSeconds(), TimeUnit.SECONDS);
+                new MielePollingHandler(mieleAPI, eventHandler)
+                    .start(config.getMqtt().getPollingInterval().getSeconds());
             }
         } catch (Exception e) {
             LOGGER.error(e.getMessage(), e);
+        }
+        finally {
             executor.shutdown();
             mqttClient.shutdown();
         }
@@ -73,5 +83,7 @@ public class Main {
         } catch (final IOException e) {
             LOGGER.error(e.getMessage(), e);
         }
+
+        System.exit(1);
     }
 }
