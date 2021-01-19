@@ -31,6 +31,9 @@ import org.slf4j.LoggerFactory;
 public class MieleAPI {
     private static final Logger LOGGER = LoggerFactory.getLogger(MieleAPI.class);
 
+    public static final int MAX_RECONNECT_RETRY = 10;
+    public static final int RECONNECT_SLEEP_MS = 120_000;
+
     private final String clientId;
     private final String clientSecret;
     private final String username;
@@ -59,7 +62,7 @@ public class MieleAPI {
         return this;
     }
 
-    public Token getToken() {
+    public Token getToken() throws IOException {
         if (token == null) {
             updateToken();
         }
@@ -105,7 +108,7 @@ public class MieleAPI {
         return false;
     }
 
-    public void updateToken() {
+    public void updateToken() throws IOException {
         try {
             if (refreshToken(this.token)) {
                 return;
@@ -114,7 +117,7 @@ public class MieleAPI {
             final String code = this.fetchCode();
             setToken(this.fetchToken(code));
         } catch (final IOException e) {
-            throw new RuntimeException("Error while fetching token", e);
+            throw new IOException("Error while fetching token", e);
         }
     }
 
@@ -216,5 +219,41 @@ public class MieleAPI {
                 }
             }
         }
+    }
+
+    public boolean waitReconnect() {
+        try {
+            for (int i = 1; i <= MAX_RECONNECT_RETRY ; i++) {
+                LOGGER.info("Wait for the network connection to come back (retry {}/{})", i, MAX_RECONNECT_RETRY);
+
+                // Wait some time (e.g. short interruption of the internet connection)
+                Thread.sleep(RECONNECT_SLEEP_MS);
+
+                if (tryReconnect()) {
+                    return true;
+                }
+            }
+        } catch (InterruptedException e) {
+            LOGGER.debug(e.getMessage(), e);
+            Thread.currentThread().interrupt();
+        }
+
+        LOGGER.info("Cannot connect to the Miele API (giving up)");
+        return false;
+    }
+
+    private boolean tryReconnect() {
+        try {
+            updateToken();
+            return true;
+        } catch (IOException e) {
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug(e.getMessage(), e);
+            }
+            else {
+                LOGGER.info(e.getMessage());
+            }
+        }
+        return false;
     }
 }
