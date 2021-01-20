@@ -20,12 +20,12 @@ public class GwMqttClient {
     private static final String CLIENT_ID = "miele-mqtt-gw";
 
     private static final Logger LOGGER = LoggerFactory.getLogger(GwMqttClient.class);
+    public static final String STATE = "bridge/state";
 
     private final MemoryPersistence persistence = new MemoryPersistence();
     private final Object mutex = new Object();
     private final ConfigMqtt config;
     private EventBus eventBus;
-
     private Optional<MqttClient> client;
 
     public GwMqttClient(final ConfigMqtt config, final EventBus eventBus) {
@@ -114,9 +114,15 @@ public class GwMqttClient {
         this.publish(topic, valueString);
     }
 
+    public void online() {
+        publish(new Message(STATE, "online"));
+    }
+
     public void shutdown() {
         client.ifPresent(c -> {
             try {
+                publish(new Message(STATE, "offline"));
+
                 c.disconnect();
                 c.close();
             } catch (MqttException e) {

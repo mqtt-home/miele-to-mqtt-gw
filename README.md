@@ -1,13 +1,14 @@
 # miele-to-mqtt-gw
+
 [![mqtt-smarthome](https://img.shields.io/badge/mqtt-smarthome-blue.svg)](https://github.com/mqtt-smarthome/mqtt-smarthome)
 
-Convert the miele@home data to mqtt messages
+Convert the miele@home data to MQTT messages
 
-This application will post two MQTT messages for each connected device. One short message and a full message.
+This application will post two MQTT messages for each connected device: one short message and a full message.
 
 ## Example short message
 
-The short message is already parsed/interpreted and contatins only the most relevant information.
+The short message is already parsed/interpreted and contains only the most relevant information.
 
 ```json
 {
@@ -22,7 +23,7 @@ The short message is already parsed/interpreted and contatins only the most rele
 
 ## Example full message
 
-The full message is exactly the message provided by Miele without any changes.  
+The full message is exactly the message provided by Miele without any changes.
 See [fullmessage-example](fullmessage-example.md)
 
 ## Example configuration
@@ -53,15 +54,34 @@ See [fullmessage-example](fullmessage-example.md)
 }
 ```
 
-# Use server sent events
+# Use server-sent events
 
-Miele provides a server-sent-events api. To enable this, set the `mode`
-property in your configuration to `sse`. With sse enabled you will get faster notifications when some device state will
-change. This is an experimental setting and not enabled by default.
+Miele provides a server-sent-events API. To enable this, set the `mode`
+property in your configuration to `SSE`. With SSE enabled, you will get faster notifications when some device state
+changes. This is an experimental setting and not enabled by default.
 
 # Deduplicate messages
 
-When `deduplicate` is set to `true` no duplicate mqtt messages will be sent.
+When `deduplicate` is set to `true`, no duplicate MQTT messages will be sent.
+
+# Bridge status
+
+The bridge maintains two status topics:
+
+## Topic: `.../bridge/state`
+
+| Value     | Description                          |
+| --------- | ------------------------------------ |
+| `online`  | The bridge is started                |
+| `offline` | The bridge is currently not started. |
+
+## Topic: `.../bridge/miele`
+
+| Value          | Description                |
+| -------------- | -------------------------- |
+| `unknown`      | Unknown connection status  |
+| `connected`    | Miele API is connected     |
+| `disconnected` | Miele API is not connected |
 
 # build
 
@@ -82,7 +102,7 @@ Then, build the docker container using `build.sh`.
 
 # run
 
-Obtain you API credentials from https://www.miele.com/developer/
+Obtain your API credentials from https://www.miele.com/developer/
 
 copy the `config-example.json` to `/production/config/config.json`
 
@@ -94,7 +114,7 @@ docker-compose up -d
 ## Logging
 
 When you like to use a custom logging configuration, you can set the environment variable `LOGBACK_XML` in your compose
-file and put a `logback.xml`to the config folder.
+file and put a `logback.xml` to the config folder.
 
 Example:
 
