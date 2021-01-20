@@ -1,7 +1,9 @@
 package de.rnd7.mieletomqtt;
 
 import de.rnd7.miele.api.MieleAPI;
+import de.rnd7.miele.api.MieleAPIState;
 import de.rnd7.miele.api.MieleDevice;
+import de.rnd7.miele.api.MieleEventListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -13,21 +15,23 @@ public class MielePollingHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(MielePollingHandler.class);
 
     private MieleAPI mieleAPI;
-    private MieleEventHandler handler;
+    private MieleEventListener listener;
 
     private final ScheduledExecutorService executor = Executors.newScheduledThreadPool(1);
 
-    public MielePollingHandler(final MieleAPI mieleAPI, final MieleEventHandler handler) {
+    public MielePollingHandler(final MieleAPI mieleAPI, final MieleEventListener listener) {
         this.mieleAPI = mieleAPI;
-        this.handler = handler;
+        this.listener = listener;
     }
 
     public void exec() {
         try {
             for (final MieleDevice device : this.mieleAPI.fetchDevices()) {
-                handler.accept(device);
+                listener.state(MieleAPIState.connected);
+                listener.accept(device);
             }
         } catch (final Exception e) {
+            listener.state(MieleAPIState.disconnected);
             LOGGER.error(e.getMessage(), e);
 
             if (!this.mieleAPI.waitReconnect()) {

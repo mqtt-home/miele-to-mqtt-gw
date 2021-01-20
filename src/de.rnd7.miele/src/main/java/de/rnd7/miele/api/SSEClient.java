@@ -33,12 +33,12 @@ public class SSEClient {
         final SseRequest request = new SseRequest("https://api.mcs3.miele.com/v1/devices/all/events");
         request.setHeader("Accept-Language", "en-GB");
         request.setHeader("Authorization", "Bearer " + token);
-        final ApacheHttpSseClient sseClient = new ApacheHttpSseClient(asyncClient, executor);
 
-        final Future<SseResponse> future = sseClient.execute(request);
-
-        final SseResponse sseResponse = future.get(10, TimeUnit.SECONDS);
-        return sseResponse.getEntity().getEvents();
+        return new ApacheHttpSseClient(asyncClient, executor)
+            .execute(request)
+            .get(10, TimeUnit.SECONDS)
+            .getEntity()
+            .getEvents();
     }
 
     void shutdown() {
@@ -61,10 +61,11 @@ public class SSEClient {
         return asyncClient.isRunning();
     }
 
-    public void start(final MieleAPI api, final Consumer<MieleDevice> consumer) {
+    public void start(final MieleAPI api, MieleEventListener listener) {
         while (true) { // NOSONAR
             try {
                 final BlockingQueue<Event> events = subscribe(api);
+                listener.state(MieleAPIState.connected);
 
                 int noMessageCtr = 0;
 
@@ -76,7 +77,7 @@ public class SSEClient {
                             final JSONObject devices = new JSONObject(event.getData());
 
                             devices.keySet().stream().map(id -> new MieleDevice(id, devices.getJSONObject(id)))
-                                .forEach(consumer::accept);
+                                .forEach(listener::accept);
                         } else if (event.getEvent().equals("ping")) {
                             LOGGER.debug(".");
                         }
@@ -92,6 +93,7 @@ public class SSEClient {
                     }
                 }
             } catch (Exception e) {
+                listener.state(MieleAPIState.disconnected);
                 LOGGER.error(e.getMessage(), e);
 
                 if (!api.waitReconnect()) {
