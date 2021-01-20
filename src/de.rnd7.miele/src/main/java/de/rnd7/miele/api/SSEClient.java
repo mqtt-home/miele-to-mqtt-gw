@@ -3,7 +3,6 @@ package de.rnd7.miele.api;
 import org.apache.client.sse.ApacheHttpSseClient;
 import org.apache.client.sse.Event;
 import org.apache.client.sse.SseRequest;
-import org.apache.client.sse.SseResponse;
 import org.apache.http.impl.nio.client.CloseableHttpAsyncClient;
 import org.apache.http.impl.nio.client.HttpAsyncClients;
 import org.json.JSONObject;
@@ -14,9 +13,7 @@ import java.io.IOException;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Consumer;
 
 public class SSEClient {
     private static final Logger LOGGER = LoggerFactory.getLogger(SSEClient.class);
@@ -61,7 +58,7 @@ public class SSEClient {
         return asyncClient.isRunning();
     }
 
-    public void start(final MieleAPI api, MieleEventListener listener) {
+    public void start(final MieleAPI api, final MieleEventListener listener) {
         while (true) { // NOSONAR
             try {
                 final BlockingQueue<Event> events = subscribe(api);
