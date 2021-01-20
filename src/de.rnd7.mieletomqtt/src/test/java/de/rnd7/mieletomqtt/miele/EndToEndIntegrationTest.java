@@ -47,8 +47,40 @@ public class EndToEndIntegrationTest {
         return config;
     }
 
-    private List<ReceivedMessage> start(Config config, Function<Integer, Boolean> endCondition) {
-        final MessageListener listener = createMessageListener();
+    @Test
+    public void testPollingEndToEnd() {
+        assertConfig(createDefaultConfig());
+    }
+
+    @Test
+    public void testSSEEndToEnd() {
+        final Config config = createDefaultConfig();
+        config.getMiele().setMode(ConfigMiele.Mode.sse);
+        assertConfig(config);
+    }
+
+    private void assertConfig(final Config config) {
+        final EndToEndMessages messages = start(config);
+
+        Assert.assertEquals("online", messages.getState().getData());
+        Assert.assertEquals("connected", messages.getMiele().getData());
+
+        final JSONObject smallData = new JSONObject(messages.getSmall().getData());
+        Assert.assertNotNull(smallData.get("phase"));
+        Assert.assertNotNull(smallData.get("remainingDurationMinutes"));
+        Assert.assertNotNull(smallData.get("timeCompleted"));
+        Assert.assertNotNull(smallData.get("remainingDuration"));
+        Assert.assertNotNull(smallData.get("phaseId"));
+        Assert.assertNotNull(smallData.get("state"));
+
+        final JSONObject fullData = new JSONObject(messages.getFull().getData());
+
+        Assert.assertFalse(messages.getFull().getData().isEmpty());
+        Assert.assertNotNull(fullData.get("ident"));
+    }
+
+    private EndToEndMessages start(Config config) {
+        final EndToEndMessages listener = createMessageListener();
 
         final Thread thread = new Thread(() -> {
             new Main(config, Optional.empty());
@@ -57,79 +89,22 @@ public class EndToEndIntegrationTest {
         thread.start();
 
         // Wait for at least two messages
-        await().atMost(Duration.ofSeconds(10)).until(() -> endCondition.apply(listener.getMessages().size()));
+        await().atMost(Duration.ofSeconds(10)).until(listener::isFulfilled);
 
         thread.interrupt();
 
-        return listener.getMessages();
+        return listener;
     }
 
-    @Test
-    public void testPollingEndToEnd() {
-        final Config config = createDefaultConfig();
-
-        final List<ReceivedMessage> messages = start(config, size -> size > 1);
-
-        final ReceivedMessage full = getFullMessage(messages);
-        final ReceivedMessage small = getSmallMessage(messages);
-
-        final JSONObject smallData = new JSONObject(small.getData());
-        Assert.assertNotNull(smallData.get("phase"));
-        Assert.assertNotNull(smallData.get("remainingDurationMinutes"));
-        Assert.assertNotNull(smallData.get("timeCompleted"));
-        Assert.assertNotNull(smallData.get("remainingDuration"));
-        Assert.assertNotNull(smallData.get("phaseId"));
-        Assert.assertNotNull(smallData.get("state"));
-
-        final JSONObject fullData = new JSONObject(full.getData());
-
-        Assert.assertFalse(full.getData().isEmpty());
-        Assert.assertNotNull(fullData.get("ident"));
-    }
-
-    @Test
-    public void testSSEEndToEnd() {
-        final Config config = createDefaultConfig();
-        config.getMiele().setMode(ConfigMiele.Mode.sse);
-
-        final List<ReceivedMessage> messages = start(config, size -> size > 1);
-
-        final ReceivedMessage full = getFullMessage(messages);
-        final ReceivedMessage small = getSmallMessage(messages);
-
-        final JSONObject smallData = new JSONObject(small.getData());
-        Assert.assertNotNull(smallData.get("phase"));
-        Assert.assertNotNull(smallData.get("remainingDurationMinutes"));
-        Assert.assertNotNull(smallData.get("timeCompleted"));
-        Assert.assertNotNull(smallData.get("remainingDuration"));
-        Assert.assertNotNull(smallData.get("phaseId"));
-        Assert.assertNotNull(smallData.get("state"));
-
-        final JSONObject fullData = new JSONObject(full.getData());
-
-        Assert.assertFalse(full.getData().isEmpty());
-        Assert.assertNotNull(fullData.get("ident"));
-    }
-
-    private ReceivedMessage getSmallMessage(final List<ReceivedMessage> messages) {
-        return messages.stream().filter(m -> !m.getTopic().endsWith("/full")).findFirst()
-            .orElseThrow(() -> new IllegalStateException("Expected at least one small message to be present."));
-    }
-
-    private ReceivedMessage getFullMessage(final List<ReceivedMessage> messages) {
-        return messages.stream().filter(m -> m.getTopic().endsWith("/full")).findFirst()
-            .orElseThrow(() -> new IllegalStateException("Expected at least one full message to be present."));
-    }
-
-    private MessageListener createMessageListener() {
+    private EndToEndMessages createMessageListener() {
         final EventBus eventBus = new EventBus();
         final GwMqttClient client = new GwMqttClient(
             new ConfigMqtt().setBroker(activeMQ.getHost(), activeMQ.getMappedPort(MQTT)), eventBus);
 
-        final MessageListener listener = new MessageListener();
-        eventBus.register(listener);
+        EndToEndMessages messages = new EndToEndMessages();
+        eventBus.register(messages);
         eventBus.register(client);
         client.subscribe("miele/#");
-        return listener;
+        return messages;
     }
 }
