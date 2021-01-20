@@ -64,7 +64,7 @@ changes. This is an experimental setting and not enabled by default.
 
 When `deduplicate` is set to `true`, no duplicate MQTT messages will be sent.
 
-# Bridge state
+# Bridge status
 
 The bridge maintains two status topics:
 
