@@ -16,8 +16,6 @@ import de.rnd7.mqtt.Message;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.eventbus.EventBus;
-
 import de.rnd7.mieletomqtt.config.Config;
 import de.rnd7.mieletomqtt.config.ConfigParser;
 import de.rnd7.miele.api.MieleAPI;
