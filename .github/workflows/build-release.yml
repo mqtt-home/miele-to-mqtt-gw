@@ -1,80 +1,90 @@
 name: Build release
 
 on:
-    workflow_dispatch:
+  workflow_dispatch:
 
 jobs:
-    build:
-        runs-on: ubuntu-latest
+  build:
+    runs-on: ubuntu-latest
+    env:
+      RELEASE_VERSION: 1.1.0-b${{ github.run_number }}
 
-        steps:
-            -   name: Checkout
-                uses: actions/checkout@v2
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
 
-            -   name: Set up JDK 8
-                uses: actions/setup-java@v1
-                with:
-                    java-version: 8
+      - name: Set up JDK 8
+        uses: actions/setup-java@v1
+        with:
+          java-version: 8
 
-            -   name: Update versions
-                run: mvn versions:set -DgenerateBackupPoms=false -DnewVersion=1.0.${{ github.run_number }} --file src/pom.xml
+      - name: Update versions
+        run: mvn versions:set -DgenerateBackupPoms=false -DnewVersion=1.0.${{ github.run_number }} --file src/pom.xml
 
-            -   name: Build with Maven
-                env:
-                    MIELE_CLIENT_ID: ${{ secrets.MIELE_CLIENT_ID }}
-                    MIELE_CLIENT_SECRET: ${{ secrets.MIELE_CLIENT_SECRET }}
-                    MIELE_PASSWORD: ${{ secrets.MIELE_PASSWORD }}
-                    MIELE_USERNAME: ${{ secrets.MIELE_USERNAME }}
-                run: mvn -B package verify --file src/pom.xml
+      - name: Update version to ${{env.RELEASE_VERSION}}
+        env:
+          USENAME: ${{github.actor}}
+          PASSWORD: ${{ secrets.GITHUB_TOKEN }}
+        run: mvn versions:set -DgenerateBackupPoms=false -DnewVersion=$RELEASE_VERSION --file src/pom.xml --settings .github/workflows/settings.xml
 
-            -   name: Set up QEMU
-                uses: docker/setup-qemu-action@v1
+      - name: Build with Maven
+        env:
+          MIELE_CLIENT_ID: ${{ secrets.MIELE_CLIENT_ID }}
+          MIELE_CLIENT_SECRET: ${{ secrets.MIELE_CLIENT_SECRET }}
+          MIELE_PASSWORD: ${{ secrets.MIELE_PASSWORD }}
+          MIELE_USERNAME: ${{ secrets.MIELE_USERNAME }}
+          USENAME: ${{github.actor}}
+          PASSWORD: ${{ secrets.GITHUB_TOKEN }}
+        run: mvn -B package verify --file src/pom.xml --settings .github/workflows/settings.xml
 
-            -   name: Set up Docker Buildx
-                uses: docker/setup-buildx-action@v1
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v1
 
-            -   name: Login to DockerHub
-                uses: docker/login-action@v1
-                with:
-                    username: ${{ secrets.DOCKERHUB_USERNAME }}
-                    password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
 
-            -   name: Build docker container and push
-                id: docker_build
-                uses: docker/build-push-action@v2
-                with:
-                    context: .
-                    file: ./Dockerfile
-                    platforms: linux/386,linux/amd64,linux/arm/v6,linux/arm/v7,linux/arm64
-                    push: true
-                    tags: |
-                        pharndt/mielemqtt:latest
-                        pharndt/mielemqtt:1.0.${{ github.run_number }}
+      - name: Login to DockerHub
+        uses: docker/login-action@v1
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-            -   name: Create Release
-                id: create_release
-                uses: actions/create-release@v1
-                env:
-                    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-                with:
-                    tag_name: '1.0.${{ github.run_number }}'
-                    release_name: Release 1.0.${{ github.run_number }}
-                    body: |
-                        Docker tag: `pharndt/mielemqtt:1.0.${{ github.run_number }}`
+      - name: Build docker container and push
+        id: docker_build
+        uses: docker/build-push-action@v2
+        with:
+          context: .
+          file: ./Dockerfile
+          platforms: linux/386,linux/amd64,linux/arm/v6,linux/arm/v7,linux/arm64
+          push: true
+          tags: |
+            pharndt/mielemqtt:latest
+            pharndt/mielemqtt:${{env.RELEASE_VERSION}}
 
-                        Changes in this Release
-                          - ...
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{env.RELEASE_VERSION}}
+          release_name: ${{env.RELEASE_VERSION}}
+          body: |
+            Docker tag: `pharndt/mielemqtt:${{env.RELEASE_VERSION}}`
 
-                    draft: false
-                    prerelease: true
+            Changes in this Release
+              - ...
 
-            -   name: Upload Release Asset
-                id: upload-release-asset
-                uses: actions/upload-release-asset@v1
-                env:
-                    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-                with:
-                    upload_url: ${{ steps.create_release.outputs.upload_url }}
-                    asset_path: ./src/de.rnd7.mieletomqtt/target/miele-to-mqtt-gw.jar
-                    asset_name: miele-to-mqtt-gw.jar
-                    asset_content_type: application/jar
+          draft: false
+          prerelease: true
+
+      - name: Upload Release Asset
+        id: upload-release-asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./src/de.rnd7.mieletomqtt/target/miele-to-mqtt-gw.jar
+          asset_name: miele-to-mqtt-gw.jar
+          asset_content_type: application/jar

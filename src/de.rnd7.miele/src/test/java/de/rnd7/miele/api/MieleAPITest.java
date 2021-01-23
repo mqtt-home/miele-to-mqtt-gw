@@ -2,21 +2,23 @@ package de.rnd7.miele.api;
 
 import de.rnd7.miele.ConfigMiele;
 import de.rnd7.miele.ConfigMieleToken;
-import junit.framework.TestCase;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.junit.Assert.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-public class MieleAPITest extends TestCase {
+public class MieleAPITest  {
 
     @Test
     public void testLogin() throws Exception {
         final MieleAPI api = TestHelper.createAPI();
-        assertNotNull("API token must be available", api.getToken());
+        assertNotNull(api.getToken(), "API token must be available");
     }
 
     @Test
@@ -26,7 +28,7 @@ public class MieleAPITest extends TestCase {
         api.setTokenListener(tokens::add);
 
         final Token token = api.getToken();
-        assertNotNull("API token must be available", api.getToken());
+        assertNotNull(api.getToken(), "API token must be available");
         assertEquals(1, tokens.size());
 
         api.updateToken();
@@ -60,11 +62,11 @@ public class MieleAPITest extends TestCase {
     public void test_device_list() throws Exception {
         final MieleAPI api = TestHelper.createAPI();
         final List<MieleDevice> devices = api.fetchDevices();
-        assertFalse("Expected at least one device", devices.isEmpty());
+        assertFalse(devices.isEmpty(), "Expected at least one device");
         final MieleDevice dishwasher = devices.iterator().next();
-        assertFalse("Expected device name to be non-empty", dishwasher.getData()
+        assertFalse(dishwasher.getData()
             .getJSONObject("ident")
             .getJSONObject("deviceIdentLabel")
-            .get("techType").toString().isEmpty());
+            .get("techType").toString().isEmpty(), "Expected device name to be non-empty");
     }
 }

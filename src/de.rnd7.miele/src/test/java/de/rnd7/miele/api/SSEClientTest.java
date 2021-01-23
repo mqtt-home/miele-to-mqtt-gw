@@ -1,8 +1,7 @@
 package de.rnd7.miele.api;
 
-import junit.framework.TestCase;
 import org.apache.client.sse.Event;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
 import java.util.ArrayList;
@@ -11,8 +10,10 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 
 import static org.awaitility.Awaitility.await;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-public class SSEClientTest extends TestCase {
+public class SSEClientTest {
     @Test
     public void test_sse() throws Exception {
         final SSEClient client = new SSEClient();

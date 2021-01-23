@@ -1,14 +1,15 @@
 package de.rnd7.miele.api;
 
-import junit.framework.TestCase;
 import org.apache.commons.io.IOUtils;
 import org.json.JSONObject;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 
-public class MieleDeviceTest extends TestCase {
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+public class MieleDeviceTest {
     @Test
     public void testDeviceTurnedOff() throws Exception {
         try (final InputStream in = MieleDeviceTest.class.getResourceAsStream("device-off.json")) {

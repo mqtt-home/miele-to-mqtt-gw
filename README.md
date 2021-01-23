@@ -37,19 +37,19 @@ See [fullmessage-example](fullmessage-example.md)
     "password": "password",
     "retain": true,
 
-    "message-interval": 30,
-    "full-message-topic": "home/miele"
+    "topic": "home/miele",
+    "deduplicate": true
   },
 
   "miele": {
     "client-id": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
     "client-secret": "12345678901234567890123456789012",
+    "polling-interval": 30,
     "username": "miele_at_home_user@example.com",
     "password": "miele_at_home_password",
     "mode": "polling"
   },
   
-  "deduplicate": true,
   "timezone": "GMT+1"
 }
 ```
@@ -83,23 +83,6 @@ The bridge maintains two status topics:
 | `connected`    | Miele API is connected     |
 | `disconnected` | Miele API is not connected |
 
-# build
-
-## Precondition
-
-To execute test cases against the real Miele API, you need to set some environment variables.
-
-| Name                | Value               |
-| ------------------- | ------------------- |
-| MIELE_CLIENT_ID     | your client id      |
-| MIELE_CLIENT_SECRET | your client secret  |
-| MIELE_USERNAME      | your Miele username |
-| MIELE_PASSWORD      | your Miele password |
-
-This is necessary to verify the login method is still working, and the API has not been changed incompatible.
-
-Then, build the docker container using `build.sh`.
-
 # run
 
 Obtain your API credentials from https://www.miele.com/developer/
@@ -123,6 +106,40 @@ environment:
   TZ: "Europe/Berlin"
   LOGBACK_XML: /var/lib/miele-to-mqtt-gw/logback.xml
 ```
+
+# build
+
+## GitHub access token
+
+Make sure you have a GitHub access token in your `~/.m2/settings.xml`
+```xml
+<servers>
+  <server>
+    <id>github</id>
+    <username>your username</username>
+    <password>your access token</password>
+  </server>
+</servers>
+```
+
+See https://docs.github.com/en/packages/guides/configuring-apache-maven-for-use-with-github-packages
+
+## Test cases against real Miele API
+
+To execute test cases against the real Miele API, you need to set some environment variables.
+
+| Name                | Value               |
+| ------------------- | ------------------- |
+| MIELE_CLIENT_ID     | your client id      |
+| MIELE_CLIENT_SECRET | your client secret  |
+| MIELE_USERNAME      | your Miele username |
+| MIELE_PASSWORD      | your Miele password |
+
+This is necessary to verify the login method is still working, and the API has not been changed incompatible.
+
+## Build container
+
+Build the docker container using `build.sh`.
 
 ## openHAB configuration
 

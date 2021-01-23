@@ -11,13 +11,14 @@ import de.rnd7.miele.ConfigMiele;
 import de.rnd7.miele.api.MieleAPIState;
 import de.rnd7.miele.api.SSEClient;
 import de.rnd7.mieletomqtt.config.ConfigPersistor;
-import de.rnd7.mqtt.GwMqttClient;
-import de.rnd7.mqtt.Message;
+import de.rnd7.mqttgateway.Events;
+import de.rnd7.mqttgateway.GwMqttClient;
+import de.rnd7.mqttgateway.PublishMessage;
+import de.rnd7.mqttgateway.config.ConfigParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import de.rnd7.mieletomqtt.config.Config;
-import de.rnd7.mieletomqtt.config.ConfigParser;
 import de.rnd7.miele.api.MieleAPI;
 
 import static de.rnd7.miele.api.MieleEventListener.MIELE_STATE;
@@ -35,15 +36,17 @@ public class Main {
             LOGGER.warn("No writable config file available. Login token cannot be persisted.");
         }
 
-        final GwMqttClient mqttClient = new GwMqttClient(config.getMqtt(), Events.getBus());
-        Events.register(mqttClient);
+        registerOfflineHook();
 
-        registerOfflineHook(mqttClient);
+        final GwMqttClient client = GwMqttClient.start(config.getMqtt()
+            .setDefaultClientId("miele-mqtt-gw")
+            .setDefaultTopic("miele"));
 
         final MieleAPI mieleAPI = new MieleAPI(config.getMiele())
-            .setTokenListener(new ConfigPersistor(configFile, config));
+            .setTokenListener(new ConfigPersistor(configFile, config))
+            .login();
 
-        mqttClient.online();
+        client.online();
 
         final ScheduledExecutorService executor = Executors.newScheduledThreadPool(2);
         executor.scheduleAtFixedRate(() -> {
@@ -54,7 +57,7 @@ public class Main {
             }
         }, 2, 2, TimeUnit.HOURS);
 
-        final MieleEventHandler eventHandler = new MieleEventHandler(config.isDeduplicate());
+        final MieleEventHandler eventHandler = new MieleEventHandler();
 
         try {
             if (config.getMiele().getMode() == ConfigMiele.Mode.sse) {
@@ -64,7 +67,7 @@ public class Main {
             } else {
                 LOGGER.info("Using Miele polling api");
                 new MielePollingHandler(mieleAPI, eventHandler)
-                    .start(config.getMqtt().getPollingInterval().getSeconds());
+                    .start(config.getMiele().getPollingInterval().getSeconds());
             }
         } catch (Exception e) {
             LOGGER.error(e.getMessage(), e);
@@ -75,17 +78,17 @@ public class Main {
         }
     }
 
-    private void disconnected() {
-        Events.post(new Message(MIELE_STATE, MieleAPIState.disconnected.toString()));
-    }
-
-    private void registerOfflineHook(final GwMqttClient mqttClient) {
+    private void registerOfflineHook() {
         Runtime.getRuntime().addShutdownHook(new Thread() {
+            @Override
             public void run() {
                 disconnected();
-                mqttClient.shutdown();
             }
         });
+    }
+
+    private void disconnected() {
+        Events.post(PublishMessage.relative(MIELE_STATE, MieleAPIState.disconnected.toString()));
     }
 
     public static void main(final String[] args) {
@@ -96,7 +99,8 @@ public class Main {
 
         try {
             final File configFile = new File(args[0]);
-            new Main(ConfigParser.parse(configFile), Optional.of(configFile).filter(File::canWrite));
+            new Main(ConfigParser.parse(configFile, Config.class),
+                Optional.of(configFile).filter(File::canWrite));
         } catch (final IOException e) {
             LOGGER.error(e.getMessage(), e);
         }
