@@ -36,6 +36,8 @@ public class Main {
             LOGGER.warn("No writable config file available. Login token cannot be persisted.");
         }
 
+        registerOfflineHook();
+
         final GwMqttClient client = GwMqttClient.start(config.getMqtt()
             .setDefaultClientId("miele-mqtt-gw")
             .setDefaultTopic("miele"));
@@ -73,6 +75,15 @@ public class Main {
             executor.shutdown();
             disconnected();
         }
+    }
+
+    private void registerOfflineHook() {
+        Runtime.getRuntime().addShutdownHook(new Thread() {
+            @Override
+            public void run() {
+                disconnected();
+            }
+        });
     }
 
     private void disconnected() {
