@@ -5,7 +5,6 @@ import org.apache.client.sse.Event;
 import org.apache.client.sse.SseRequest;
 import org.apache.http.impl.nio.client.CloseableHttpAsyncClient;
 import org.apache.http.impl.nio.client.HttpAsyncClients;
-import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -17,8 +16,6 @@ import java.util.concurrent.TimeUnit;
 
 public class SSEClient {
     private static final Logger LOGGER = LoggerFactory.getLogger(SSEClient.class);
-    public static final int TIMEOUT = 1000;
-    public static final int MAX_RETRY_CTR = 10_000 / TIMEOUT;
     private final ExecutorService executor = Executors.newFixedThreadPool(1);
     private CloseableHttpAsyncClient asyncClient;
 
@@ -64,31 +61,7 @@ public class SSEClient {
                 final BlockingQueue<Event> events = subscribe(api);
                 listener.state(MieleAPIState.connected);
 
-                int noMessageCtr = 0;
-
-                while (true) {
-                    final Event event = events.poll(TIMEOUT, TimeUnit.MILLISECONDS);
-                    if (event != null) {
-                        noMessageCtr = 0;
-                        if (event.getEvent().equals("devices")) {
-                            final JSONObject devices = new JSONObject(event.getData());
-
-                            devices.keySet().stream().map(id -> new MieleDevice(id, devices.getJSONObject(id)))
-                                .forEach(listener::accept);
-                        } else if (event.getEvent().equals("ping")) {
-                            LOGGER.debug(".");
-                        }
-                    }
-                    else if (noMessageCtr >= MAX_RETRY_CTR || !asyncClient.isRunning()) {
-                        // No message for more than 10s (not even ping) - try reconnect.
-                        asyncClient.close();
-                        events.stream().close();
-                        break;
-                    }
-                    else {
-                        noMessageCtr++;
-                    }
-                }
+                new SSEClientHandler(events, asyncClient, listener::accept).run();
             } catch (Exception e) {
                 listener.state(MieleAPIState.disconnected);
                 LOGGER.error(e.getMessage(), e);
@@ -100,5 +73,4 @@ public class SSEClient {
             }
         }
     }
-
 }
