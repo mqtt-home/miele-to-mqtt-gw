@@ -6,11 +6,11 @@
     <parent>
         <groupId>de.rnd7.mieletomqtt</groupId>
         <artifactId>de.rnd7.mieletomqtt.parent</artifactId>
-        <version>1-SNAPSHOT</version>
+        <version>2-SNAPSHOT</version>
     </parent>
 
     <artifactId>de.rnd7.miele</artifactId>
-    <version>1-SNAPSHOT</version>
+    <version>2-SNAPSHOT</version>
 
     <dependencies>
         <!-- https://mvnrepository.com/artifact/commons-io/commons-io -->
