@@ -1,20 +1,20 @@
 package de.rnd7.mieletomqtt.miele;
 
 import com.google.common.eventbus.Subscribe;
-import de.rnd7.mqtt.ReceivedMessage;
+import de.rnd7.mqttgateway.Message;
 
 import java.util.Arrays;
 import java.util.List;
 
 public class EndToEndMessages extends MessageListener {
 
-    private ReceivedMessage full;
-    private ReceivedMessage small;
-    private ReceivedMessage state;
-    private ReceivedMessage miele;
+    private Message full;
+    private Message small;
+    private Message state;
+    private Message miele;
 
     @Subscribe
-    public void onMessage(ReceivedMessage message) {
+    public void onMessage(Message message) {
         if (isMiele(message)) {
             miele = message;
         } else if (isState(message)) {
@@ -27,35 +27,35 @@ public class EndToEndMessages extends MessageListener {
     }
 
     @Override
-    public List<ReceivedMessage> getMessages() {
+    public List<Message> getMessages() {
         return Arrays.asList(full, small, state, miele);
     }
 
-    private boolean isMiele(ReceivedMessage message) {
+    private boolean isMiele(Message message) {
         return message.getTopic().equals("miele/bridge/miele");
     }
 
-    private boolean isState(ReceivedMessage message) {
+    private boolean isState(Message message) {
         return message.getTopic().equals("miele/bridge/state");
     }
 
-    private boolean isFull(ReceivedMessage message) {
+    private boolean isFull(Message message) {
         return message.getTopic().endsWith("/full");
     }
 
-    public ReceivedMessage getMiele() {
+    public Message getMiele() {
         return miele;
     }
 
-    public ReceivedMessage getFull() {
+    public Message getFull() {
         return full;
     }
 
-    public ReceivedMessage getSmall() {
+    public Message getSmall() {
         return small;
     }
 
-    public ReceivedMessage getState() {
+    public Message getState() {
         return state;
     }
 
