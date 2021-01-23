@@ -43,7 +43,8 @@ public class Main {
             .setDefaultTopic("miele"));
 
         final MieleAPI mieleAPI = new MieleAPI(config.getMiele())
-            .setTokenListener(new ConfigPersistor(configFile, config));
+            .setTokenListener(new ConfigPersistor(configFile, config))
+            .login();
 
         client.online();
 

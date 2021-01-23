@@ -34,27 +34,25 @@ public class MieleAPI {
     public static final int MAX_RECONNECT_RETRY = 10;
     public static final int RECONNECT_SLEEP_MS = 120_000;
 
-    private final String clientId;
-    private final String clientSecret;
-    private final String username;
-    private final String password;
+    private final ConfigMiele config;
     private Token token;
 
     private TokenListener tokenListener;
 
     public MieleAPI(final ConfigMiele config) {
-        this.clientId = config.getClientId();
-        this.clientSecret = config.getClientSecret();
-        this.username = config.getUsername();
-        this.password = config.getPassword();
+        this.config = config;
+    }
 
-        final ConfigMieleToken ctoken = config.getToken();
-        if (ctoken != null && ctoken.isValid()) {
+    public MieleAPI login() {
+        final ConfigMieleToken persistedToken = config.getToken();
+        if (persistedToken != null && persistedToken.isValid()) {
             refreshToken(new Token()
-                .setAccessToken(ctoken.getAccess())
-                .setRefreshToken(ctoken.getRefresh())
-                .setExpiresAt(ctoken.getValidUntil().toLocalDateTime()));
+                .setAccessToken(persistedToken.getAccess())
+                .setRefreshToken(persistedToken.getRefresh())
+                .setExpiresAt(persistedToken.getValidUntil().toLocalDateTime()));
         }
+
+        return this;
     }
 
     public MieleAPI setTokenListener(final TokenListener tokenListener) {
@@ -133,7 +131,7 @@ public class MieleAPI {
         try (CloseableHttpClient httpclient = HttpClients.createDefault()) {
             final String request = String.format(
                 "client_id=%s&client_secret=%s&code=%s&redirect_uri=%s&grant_type=authorization_code&state=token",
-                this.clientId, this.clientSecret, code,
+                this.config.getClientId(), this.config.getClientSecret(), code,
                 URLEncoder.encode("/v1/devices", StandardCharsets.UTF_8.name()));
 
             final HttpPost post = new HttpPost("https://api.mcs3.miele.com/thirdparty/token");
@@ -152,7 +150,7 @@ public class MieleAPI {
         try (CloseableHttpClient httpclient = HttpClients.createDefault()) {
             final String request = String.format(
                 "client_id=%s&client_secret=%s&refresh_token=%s&grant_type=refresh_token",
-                this.clientId, this.clientSecret, refreshToken);
+                this.config.getClientId(), this.config.getClientSecret(), refreshToken);
 
             final HttpPost post = new HttpPost("https://api.mcs3.miele.com/thirdparty/token");
             post.setHeader("Content-Type", "application/x-www-form-urlencoded");
@@ -186,9 +184,9 @@ public class MieleAPI {
         try (final CloseableHttpClient httpclient = HttpClients.createDefault()) {
             final String request = String.format(
                 "email=%s&password=%s&redirect_uri=%s&state=login&response_type=code&client_id=%s&vgInformationSelector=%s",
-                URLEncoder.encode(this.username, StandardCharsets.UTF_8.name()),
-                URLEncoder.encode(this.password, StandardCharsets.UTF_8.name()),
-                URLEncoder.encode("/v1/", StandardCharsets.UTF_8.name()), this.clientId, "de-de");
+                URLEncoder.encode(this.config.getUsername(), StandardCharsets.UTF_8.name()),
+                URLEncoder.encode(this.config.getPassword(), StandardCharsets.UTF_8.name()),
+                URLEncoder.encode("/v1/", StandardCharsets.UTF_8.name()), this.config.getClientId(), "de-de");
 
             final HttpPost post = new HttpPost("https://api.mcs3.miele.com/oauth/auth");
             post.setHeader("Content-Type", "application/x-www-form-urlencoded");
