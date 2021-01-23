@@ -13,6 +13,8 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.wait.strategy.HttpWaitStrategy;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
 
 import java.io.File;
@@ -26,9 +28,10 @@ import static de.rnd7.mieletomqtt.miele.MqttIntegrationTest.MQTT;
 import static de.rnd7.mieletomqtt.miele.MqttIntegrationTest.WEBUI;
 import static org.awaitility.Awaitility.await;
 
+@Testcontainers
 public class EndToEndIntegrationTest {
-    @Rule
-    public GenericContainer activeMQ = new GenericContainer(DockerImageName.parse("rmohr/activemq:5.15.9"))
+    @Container
+    public GenericContainer<?> activeMQ = new GenericContainer<>(DockerImageName.parse("rmohr/activemq:5.15.9"))
         .withExposedPorts(MQTT, WEBUI)
         .waitingFor(new HttpWaitStrategy().forPort(WEBUI));
 
@@ -38,11 +41,11 @@ public class EndToEndIntegrationTest {
             .setClientId(TestHelper.forceEnv("MIELE_CLIENT_ID"))
             .setClientSecret(TestHelper.forceEnv("MIELE_CLIENT_SECRET"))
             .setUsername(TestHelper.forceEnv("MIELE_USERNAME"))
-            .setPassword(TestHelper.forceEnv("MIELE_PASSWORD"));
+            .setPassword(TestHelper.forceEnv("MIELE_PASSWORD"))
+            .setPollingInterval(Duration.ofSeconds(2));
 
         config.getMqtt()
-            .setPollingInterval(java.time.Duration.ofSeconds(2))
-            .setBroker(activeMQ.getHost(), activeMQ.getMappedPort(MQTT))
+            .setUrl(String.format("tcp://%s:%s", activeMQ.getHost(), activeMQ.getMappedPort(MQTT)))
             .setClientId(UUID.randomUUID().toString());
         return config;
     }

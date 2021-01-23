@@ -14,7 +14,7 @@ import java.util.concurrent.TimeUnit;
 public class MielePollingHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(MielePollingHandler.class);
 
-    private MieleAPI mieleAPI;
+    private final MieleAPI mieleAPI;
     private MieleEventListener listener;
 
     private final ScheduledExecutorService executor = Executors.newScheduledThreadPool(1);

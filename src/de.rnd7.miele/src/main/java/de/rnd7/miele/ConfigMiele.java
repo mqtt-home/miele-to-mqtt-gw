@@ -2,6 +2,8 @@ package de.rnd7.miele;
 
 import com.google.gson.annotations.SerializedName;
 
+import java.time.Duration;
+
 public class ConfigMiele {
     public static enum Mode {
         sse,
@@ -20,6 +22,9 @@ public class ConfigMiele {
 
     @SerializedName("mode")
     private Mode mode = Mode.polling;
+
+    @SerializedName("polling-interval")
+    private Duration pollingInterval = Duration.ofSeconds(60);
 
     private ConfigMieleToken token = new ConfigMieleToken();
 
@@ -74,5 +79,14 @@ public class ConfigMiele {
 
     public void setToken(final ConfigMieleToken token) {
         this.token = token;
+    }
+
+    public Duration getPollingInterval() {
+        return pollingInterval;
+    }
+
+    public ConfigMiele setPollingInterval(final Duration pollingInterval) {
+        this.pollingInterval = pollingInterval;
+        return this;
     }
 }
