@@ -18,11 +18,7 @@
             <artifactId>de.rnd7.miele</artifactId>
             <version>1-SNAPSHOT</version>
         </dependency>
-        <dependency>
-            <groupId>de.rnd7.mieletomqtt</groupId>
-            <artifactId>de.rnd7.mqtt</artifactId>
-            <version>1-SNAPSHOT</version>
-        </dependency>
+ 
         <dependency>
             <groupId>de.rnd7.mqttgateway</groupId>
             <artifactId>mqttgateway</artifactId>
