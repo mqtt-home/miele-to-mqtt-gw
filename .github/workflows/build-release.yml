@@ -17,10 +17,7 @@ jobs:
         uses: actions/setup-java@v1
         with:
           java-version: 8
-
-      - name: Update versions
-        run: mvn versions:set -DgenerateBackupPoms=false -DnewVersion=1.0.${{ github.run_number }} --file src/pom.xml
-
+      
       - name: Update version to ${{env.RELEASE_VERSION}}
         env:
           USENAME: ${{github.actor}}
