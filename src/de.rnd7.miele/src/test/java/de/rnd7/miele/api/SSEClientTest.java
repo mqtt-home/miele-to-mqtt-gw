@@ -1,6 +1,6 @@
 package de.rnd7.miele.api;
 
-import org.apache.client.sse.Event;
+import dev.manpreet.apache.sseclient.Event;
 import org.junit.jupiter.api.Test;
 
 import java.time.Duration;

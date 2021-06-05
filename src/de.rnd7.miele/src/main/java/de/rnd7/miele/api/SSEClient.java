@@ -1,8 +1,8 @@
 package de.rnd7.miele.api;
 
-import org.apache.client.sse.ApacheHttpSseClient;
-import org.apache.client.sse.Event;
-import org.apache.client.sse.SseRequest;
+import dev.manpreet.apache.sseclient.ApacheHttpSseClient;
+import dev.manpreet.apache.sseclient.Event;
+import dev.manpreet.apache.sseclient.SseRequest;
 import org.apache.http.impl.nio.client.CloseableHttpAsyncClient;
 import org.apache.http.impl.nio.client.HttpAsyncClients;
 import org.slf4j.Logger;
