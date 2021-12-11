@@ -7,7 +7,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     env:
-      RELEASE_VERSION: 2.0.0-b${{ github.run_number }}
+      RELEASE_VERSION: 2.1.0-b${{ github.run_number }}
 
     steps:
       - name: Checkout
