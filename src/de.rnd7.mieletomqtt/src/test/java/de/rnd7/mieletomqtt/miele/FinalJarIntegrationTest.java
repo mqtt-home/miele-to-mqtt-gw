@@ -1,13 +1,13 @@
 package de.rnd7.mieletomqtt.miele;
 
-import org.junit.Assert;
-import org.junit.Test;
+
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.util.StringJoiner;
 
 public class FinalJarIntegrationTest {
     private File getFinalJar() {
@@ -18,8 +18,8 @@ public class FinalJarIntegrationTest {
     public void testFinalJarExists() {
         final File finalJar = getFinalJar();
 
-        Assert.assertTrue(finalJar.isFile());
-        Assert.assertTrue(finalJar.exists());
+        Assertions.assertTrue(finalJar.isFile());
+        Assertions.assertTrue(finalJar.exists());
     }
 
     /**
@@ -33,8 +33,8 @@ public class FinalJarIntegrationTest {
         final Process process = startFinalJar();
 
         final String string = consumeInputStream(process);
-        Assert.assertTrue("Expected missing config file", string.contains("ERROR - Expected configuration file as argument"));
-        Assert.assertEquals("Exit code", 0, process.waitFor());
+        Assertions.assertTrue(string.contains("ERROR - Expected configuration file as argument"), "Expected missing config file");
+        Assertions.assertEquals(0, process.waitFor(), "Exit code");
     }
 
     private Process startFinalJar() throws IOException {

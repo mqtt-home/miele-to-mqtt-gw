@@ -7,8 +7,9 @@ import de.rnd7.mqttgateway.Events;
 import de.rnd7.mqttgateway.GwMqttClient;
 import de.rnd7.mqttgateway.config.ConfigMqtt;
 import org.json.JSONObject;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.wait.strategy.HttpWaitStrategy;
 import org.testcontainers.junit.jupiter.Container;
@@ -60,21 +61,21 @@ public class EndToEndIntegrationTest {
     private void assertConfig(final Config config) {
         final EndToEndMessages messages = start(config);
 
-        Assert.assertEquals("online", messages.getState().getRaw());
-        Assert.assertEquals("connected", messages.getMiele().getRaw());
+        Assertions.assertEquals("online", messages.getState().getRaw());
+        Assertions.assertEquals("connected", messages.getMiele().getRaw());
 
         final JSONObject smallData = new JSONObject(messages.getSmall().getRaw());
-        Assert.assertNotNull(smallData.get("phase"));
-        Assert.assertNotNull(smallData.get("remainingDurationMinutes"));
-        Assert.assertNotNull(smallData.get("timeCompleted"));
-        Assert.assertNotNull(smallData.get("remainingDuration"));
-        Assert.assertNotNull(smallData.get("phaseId"));
-        Assert.assertNotNull(smallData.get("state"));
+        Assertions.assertNotNull(smallData.get("phase"));
+        Assertions.assertNotNull(smallData.get("remainingDurationMinutes"));
+        Assertions.assertNotNull(smallData.get("timeCompleted"));
+        Assertions.assertNotNull(smallData.get("remainingDuration"));
+        Assertions.assertNotNull(smallData.get("phaseId"));
+        Assertions.assertNotNull(smallData.get("state"));
 
         final JSONObject fullData = new JSONObject(messages.getFull().getRaw());
 
-        Assert.assertFalse(messages.getFull().getRaw().isEmpty());
-        Assert.assertNotNull(fullData.get("ident"));
+        Assertions.assertFalse(messages.getFull().getRaw().isEmpty());
+        Assertions.assertNotNull(fullData.get("ident"));
     }
 
     private EndToEndMessages start(Config config) {

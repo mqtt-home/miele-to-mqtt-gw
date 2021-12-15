@@ -37,29 +37,26 @@ public class Main {
         }
 
         registerOfflineHook();
-
-        final GwMqttClient client = GwMqttClient.start(config.getMqtt()
-            .setDefaultClientId("miele-mqtt-gw")
-            .setDefaultTopic("miele"));
-
-        final MieleAPI mieleAPI = new MieleAPI(config.getMiele())
-            .setTokenListener(new ConfigPersistor(configFile, config))
-            .login();
-
-        client.online();
-
         final ScheduledExecutorService executor = Executors.newScheduledThreadPool(2);
-        executor.scheduleAtFixedRate(() -> {
-            try {
-                mieleAPI.updateToken();
-            } catch (IOException e) {
-                LOGGER.error("Error updating token: {}", e.getMessage(), e);
-            }
-        }, 2, 2, TimeUnit.HOURS);
-
-        final MieleEventHandler eventHandler = new MieleEventHandler();
 
         try {
+            GwMqttClient.start(config.getMqtt()
+                .setDefaultTopic("miele"))
+                .online();
+
+            final MieleAPI mieleAPI = new MieleAPI(config.getMiele())
+                .setTokenListener(new ConfigPersistor(configFile, config))
+                .login();
+
+            executor.scheduleAtFixedRate(() -> {
+                try {
+                    mieleAPI.updateToken();
+                } catch (IOException e) {
+                    LOGGER.error("Error updating token: {}", e.getMessage(), e);
+                }
+            }, 2, 2, TimeUnit.HOURS);
+
+            final MieleEventHandler eventHandler = new MieleEventHandler();
             if (config.getMiele().getMode() == ConfigMiele.Mode.sse) {
                 LOGGER.info("Using Miele SSE api");
                 new SSEClient()

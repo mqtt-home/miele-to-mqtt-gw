@@ -1,15 +1,12 @@
 package de.rnd7.mieletomqtt.miele;
 
-import com.google.common.eventbus.EventBus;
 import de.rnd7.mqttgateway.Events;
 import de.rnd7.mqttgateway.GwMqttClient;
 import de.rnd7.mqttgateway.Message;
 import de.rnd7.mqttgateway.PublishMessage;
 import de.rnd7.mqttgateway.config.ConfigMqtt;
-import org.junit.Assert;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.wait.strategy.HttpWaitStrategy;
 import org.testcontainers.junit.jupiter.Container;
@@ -47,9 +44,9 @@ public class MqttIntegrationTest {
 
         await().atMost(Duration.ofSeconds(10)).until(() -> !listener.getMessages().isEmpty());
 
-        Assert.assertEquals(1, listener.getMessages().size());
+        Assertions.assertEquals(1, listener.getMessages().size());
         Message message = listener.getMessages().iterator().next();
-        Assert.assertEquals("home/miele/hi/there", message.getTopic());
-        Assert.assertEquals("message", message.getRaw());
+        Assertions.assertEquals("home/miele/hi/there", message.getTopic());
+        Assertions.assertEquals("message", message.getRaw());
     }
 }
