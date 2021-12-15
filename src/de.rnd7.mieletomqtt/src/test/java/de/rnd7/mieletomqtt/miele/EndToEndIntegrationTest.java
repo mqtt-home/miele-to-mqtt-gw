@@ -16,6 +16,7 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
 
+import java.net.URISyntaxException;
 import java.time.Duration;
 import java.util.Optional;
 import java.util.UUID;
@@ -41,24 +42,23 @@ public class EndToEndIntegrationTest {
             .setPollingInterval(Duration.ofSeconds(2));
 
         config.getMqtt()
-            .setUrl(String.format("tcp://%s:%s", activeMQ.getHost(), activeMQ.getMappedPort(MQTT)))
-            .setClientId(UUID.randomUUID().toString());
+            .setUrl(String.format("tcp://%s:%s", activeMQ.getHost(), activeMQ.getMappedPort(MQTT)));
         return config;
     }
 
     @Test
-    public void testPollingEndToEnd() {
+    public void testPollingEndToEnd() throws URISyntaxException {
         assertConfig(createDefaultConfig());
     }
 
     @Test
-    public void testSSEEndToEnd() {
+    public void testSSEEndToEnd() throws URISyntaxException {
         final Config config = createDefaultConfig();
         config.getMiele().setMode(ConfigMiele.Mode.sse);
         assertConfig(config);
     }
 
-    private void assertConfig(final Config config) {
+    private void assertConfig(final Config config) throws URISyntaxException {
         final EndToEndMessages messages = start(config);
 
         Assertions.assertEquals("online", messages.getState().getRaw());
@@ -78,7 +78,7 @@ public class EndToEndIntegrationTest {
         Assertions.assertNotNull(fullData.get("ident"));
     }
 
-    private EndToEndMessages start(Config config) {
+    private EndToEndMessages start(Config config) throws URISyntaxException {
         final EndToEndMessages listener = createMessageListener();
 
         final Thread thread = new Thread(() -> {
@@ -95,7 +95,7 @@ public class EndToEndIntegrationTest {
         return listener;
     }
 
-    private EndToEndMessages createMessageListener() {
+    private EndToEndMessages createMessageListener() throws URISyntaxException {
         final ConfigMqtt config = new ConfigMqtt()
             .setUrl(String.format("tcp://%s:%s", activeMQ.getHost(), activeMQ.getMappedPort(MQTT)));
 
