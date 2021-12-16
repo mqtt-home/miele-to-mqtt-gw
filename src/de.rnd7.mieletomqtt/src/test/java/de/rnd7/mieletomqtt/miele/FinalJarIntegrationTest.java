@@ -9,13 +9,13 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 
-public class FinalJarIntegrationTest {
+class FinalJarIntegrationTest {
     private File getFinalJar() {
         return new File("./target/miele-to-mqtt-gw.jar");
     }
 
     @Test
-    public void testFinalJarExists() {
+    void testFinalJarExists() {
         final File finalJar = getFinalJar();
 
         Assertions.assertTrue(finalJar.isFile());
@@ -29,7 +29,7 @@ public class FinalJarIntegrationTest {
      * @throws Exception
      */
     @Test
-    public void execFinalJar() throws Exception {
+    void execFinalJar() throws Exception {
         final Process process = startFinalJar();
 
         final String string = consumeInputStream(process);

@@ -28,19 +28,19 @@ public class MqttIntegrationTest {
         .waitingFor(new HttpWaitStrategy().forPort(WEBUI));
 
     @Test
-    public void testMqtt() throws Exception {
+    void testMqtt() throws Exception {
         final ConfigMqtt configMqtt = new ConfigMqtt()
             .setUrl(String.format("tcp://%s:%s", activeMQ.getHost(), activeMQ.getMappedPort(MQTT)))
-            .setTopic("home/miele");
+            .setTopic("home/miele")
+            .setAutoPublish(false);
 
         final GwMqttClient client = GwMqttClient.start(configMqtt);
 
         final MessageListener listener = new MessageListener();
         Events.register(listener);
-        Events.register(client);
         client.subscribe("home/miele/#");
 
-        Events.post(PublishMessage.absolute("hi/there", "message"));
+        Events.post(PublishMessage.relative("hi/there", "message"));
 
         await().atMost(Duration.ofSeconds(10)).until(() -> !listener.getMessages().isEmpty());
 

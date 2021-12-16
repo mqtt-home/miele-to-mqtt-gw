@@ -14,14 +14,14 @@ public class EndToEndMessages extends MessageListener {
     private Message miele;
 
     @Subscribe
-    public void onMessage(Message message) {
+    public void onMessage(final Message message) {
         if (isMiele(message)) {
             miele = message;
         } else if (isState(message)) {
             state = message;
         } else if (isFull(message)) {
             full = message;
-        } else {
+        } else if (message.getTopic().startsWith("miele/")) {
             small = message;
         }
     }
@@ -60,7 +60,7 @@ public class EndToEndMessages extends MessageListener {
     }
 
     public boolean isFulfilled() {
-        return  miele != null
+        return miele != null
             && state != null
             && small != null
             && full != null;

@@ -41,8 +41,7 @@ public class Main {
 
         try {
             GwMqttClient.start(config.getMqtt()
-                .setDefaultTopic("miele"))
-                .online();
+                .setDefaultTopic("miele"));
 
             final MieleAPI mieleAPI = new MieleAPI(config.getMiele())
                 .setTokenListener(new ConfigPersistor(configFile, config))

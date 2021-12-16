@@ -24,6 +24,9 @@ import java.util.UUID;
 import static de.rnd7.mieletomqtt.miele.MqttIntegrationTest.MQTT;
 import static de.rnd7.mieletomqtt.miele.MqttIntegrationTest.WEBUI;
 import static org.awaitility.Awaitility.await;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @Testcontainers
 public class EndToEndIntegrationTest {
@@ -42,17 +45,18 @@ public class EndToEndIntegrationTest {
             .setPollingInterval(Duration.ofSeconds(2));
 
         config.getMqtt()
-            .setUrl(String.format("tcp://%s:%s", activeMQ.getHost(), activeMQ.getMappedPort(MQTT)));
+            .setUrl(String.format("tcp://%s:%s", activeMQ.getHost(), activeMQ.getMappedPort(MQTT)))
+            .setDefaultTopic("miele");
         return config;
     }
 
     @Test
-    public void testPollingEndToEnd() throws URISyntaxException {
+    void testPollingEndToEnd() throws URISyntaxException {
         assertConfig(createDefaultConfig());
     }
 
     @Test
-    public void testSSEEndToEnd() throws URISyntaxException {
+    void testSSEEndToEnd() throws URISyntaxException {
         final Config config = createDefaultConfig();
         config.getMiele().setMode(ConfigMiele.Mode.sse);
         assertConfig(config);
@@ -61,24 +65,24 @@ public class EndToEndIntegrationTest {
     private void assertConfig(final Config config) throws URISyntaxException {
         final EndToEndMessages messages = start(config);
 
-        Assertions.assertEquals("online", messages.getState().getRaw());
-        Assertions.assertEquals("connected", messages.getMiele().getRaw());
+        assertEquals("online", messages.getState().getRaw());
+        assertEquals("connected", messages.getMiele().getRaw());
 
         final JSONObject smallData = new JSONObject(messages.getSmall().getRaw());
-        Assertions.assertNotNull(smallData.get("phase"));
-        Assertions.assertNotNull(smallData.get("remainingDurationMinutes"));
-        Assertions.assertNotNull(smallData.get("timeCompleted"));
-        Assertions.assertNotNull(smallData.get("remainingDuration"));
-        Assertions.assertNotNull(smallData.get("phaseId"));
-        Assertions.assertNotNull(smallData.get("state"));
+        assertNotNull(smallData.get("phase"));
+        assertNotNull(smallData.get("remainingDurationMinutes"));
+        assertNotNull(smallData.get("timeCompleted"));
+        assertNotNull(smallData.get("remainingDuration"));
+        assertNotNull(smallData.get("phaseId"));
+        assertNotNull(smallData.get("state"));
 
         final JSONObject fullData = new JSONObject(messages.getFull().getRaw());
 
         Assertions.assertFalse(messages.getFull().getRaw().isEmpty());
-        Assertions.assertNotNull(fullData.get("ident"));
+        assertNotNull(fullData.get("ident"));
     }
 
-    private EndToEndMessages start(Config config) throws URISyntaxException {
+    private EndToEndMessages start(final Config config) throws URISyntaxException {
         final EndToEndMessages listener = createMessageListener();
 
         final Thread thread = new Thread(() -> {
@@ -87,24 +91,31 @@ public class EndToEndIntegrationTest {
 
         thread.start();
 
-        // Wait for at least two messages
-        await().atMost(Duration.ofSeconds(10)).until(listener::isFulfilled);
+        // Wait until all messages are there
+        await().atMost(Duration.ofSeconds(20)).until(listener::isFulfilled);
 
         thread.interrupt();
 
         return listener;
     }
 
+    private void awaitConnected(final GwMqttClient client) {
+        await().atMost(Duration.ofSeconds(2)).until(client::isConnected);
+        assertTrue(client.isConnected());
+    }
+
     private EndToEndMessages createMessageListener() throws URISyntaxException {
         final ConfigMqtt config = new ConfigMqtt()
-            .setUrl(String.format("tcp://%s:%s", activeMQ.getHost(), activeMQ.getMappedPort(MQTT)));
-
-        final GwMqttClient client = GwMqttClient.start(config);
+            .setUrl(String.format("tcp://%s:%s", activeMQ.getHost(), activeMQ.getMappedPort(MQTT)))
+            .setAutoPublish(false);
 
         final EndToEndMessages messages = new EndToEndMessages();
         Events.register(messages);
-        Events.register(client);
-        client.subscribe("miele/#");
+
+        final GwMqttClient client = GwMqttClient.start(config);
+        awaitConnected(client);
+        client.subscribe("#");
+
         return messages;
     }
 }
