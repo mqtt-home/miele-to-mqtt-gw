@@ -131,13 +131,13 @@
         <dependency>
             <groupId>de.rnd7.mqttgateway</groupId>
             <artifactId>mqttgateway</artifactId>
-            <version>2.3.0</version>
+            <version>3.0.2</version>
         </dependency>
 
         <dependency>
             <groupId>de.rnd7.mqttgateway</groupId>
             <artifactId>test</artifactId>
-            <version>2.3.0</version>
+            <version>3.0.2</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
