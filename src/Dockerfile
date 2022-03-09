@@ -1,5 +1,5 @@
 # ---- Build ----
-FROM openjdk:8-jdk-alpine as builder
+FROM openjdk:19-jdk-alpine as builder
 
 ARG MIELE_CLIENT_ID
 ARG MIELE_CLIENT_SECRET
@@ -28,7 +28,7 @@ COPY . /opt/miele-to-mqtt-gw
 RUN mvn -B package
 
 # ---- Prod ----
-FROM openjdk:8-jdk-alpine
+FROM openjdk:19-jdk-alpine
 RUN mkdir /opt/app
 WORKDIR /opt/app
 COPY --from=builder /opt/miele-to-mqtt-gw/de.rnd7.mieletomqtt/target/miele-to-mqtt-gw.jar .
