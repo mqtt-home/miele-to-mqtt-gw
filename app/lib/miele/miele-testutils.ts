@@ -1,4 +1,4 @@
-import { ConfigMiele } from "../config/config";
+import { ConfigMiele } from "../config/config"
 
 const forceEnv = (propName: string) => {
     // macOS note: sudo vi /etc/launchd.conf
@@ -13,9 +13,9 @@ export const testConfig = () => {
     return {
         "client-id": forceEnv("MIELE_CLIENT_ID"),
         "client-secret": forceEnv("MIELE_CLIENT_SECRET"),
-        "username": forceEnv("MIELE_USERNAME"),
-        "password": forceEnv("MIELE_PASSWORD"),
-        "mode": "sse",
-        "polling-interval": 30,
+        username: forceEnv("MIELE_USERNAME"),
+        password: forceEnv("MIELE_PASSWORD"),
+        mode: "sse",
+        "polling-interval": 30
     } as ConfigMiele
 }

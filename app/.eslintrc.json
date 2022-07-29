@@ -9,15 +9,16 @@
     ],
     "parser": "@typescript-eslint/parser",
     "parserOptions": {
-        "ecmaVersion": "latest",
+        "ecmaVersion": 13,
         "sourceType": "module"
     },
     "plugins": [
         "@typescript-eslint"
     ],
     "rules": {
-        "@typescript-eslint/no-require-imports": "error",
-        "@typescript-eslint/no-unused-vars": "error",
+        "@typescript-eslint/no-require-imports": "warn",
+        "@typescript-eslint/no-unused-vars": "warn",
+        "no-trailing-spaces": "off",
         "brace-style": [
             "error",
             "stroustrup"
@@ -32,7 +33,7 @@
             4
         ],
         "no-throw-literal": "warn",
-        "no-unexpected-multiline": "error",
+        "no-unexpected-multiline": "warn",
         "no-unused-vars": "off",
         "quotes": [
             "error",

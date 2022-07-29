@@ -1,7 +1,7 @@
-import { log } from "./logger"
 import { Writable } from "stream"
 import * as winston from "winston"
 import * as Transport from "winston-transport"
+import { log } from "./logger"
 
 export class TestLogger {
     output = ""

@@ -1,9 +1,7 @@
 import mqtt from "mqtt"
-import { log } from "../logger"
-import { state } from "../state/state-manager"
-import { publishResource } from "../state/state-event-handler"
-import { putMessage } from "../put/put-handler"
+
 import { getAppConfig } from "../config/config"
+import { log } from "../logger"
 
 export const makeid = (length: number) => {
     let result = ""
@@ -91,16 +89,16 @@ export const connectMqtt: (() => Promise<() => void>) = () => {
             })
         })
 
-        client.on("message", async (topic, message) => {
-            const resource = state.resourcesByTopic.get(topic)
-            if (resource) {
-                if (topic.endsWith("/get") || topic.endsWith("/state")) {
-                    publishResource(resource)
-                }
-                else if (topic.endsWith("/set")) {
-                    await putMessage(resource, message)
-                }
-            }
-        })
+        // client.on("message", async (topic, message) => {
+        //     const resource = state.resourcesByTopic.get(topic)
+        //     if (resource) {
+        //         if (topic.endsWith("/get") || topic.endsWith("/state")) {
+        //             publishResource(resource)
+        //         }
+        //         else if (topic.endsWith("/set")) {
+        //             await putMessage(resource, message)
+        //         }
+        //     }
+        // })
     })
 }

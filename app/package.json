@@ -6,7 +6,7 @@
     "scripts": {
         "test": "jest",
         "coverage": "jest --coverage",
-        "start": "tsc && node dist/app/lib/index.js",
+        "start": "tsc && node dist/index.js",
         "clean": "rimraf dist",
         "prebuild": "run-s clean",
         "build": "ncc build lib/index.ts -o dist",

@@ -1,5 +1,5 @@
+import { testConfig } from "../miele-testutils"
 import { login, refreshToken } from "./login"
-import { testConfig } from "./miele-testutils"
 
 describe("login", () => {
     test("login", async () => {

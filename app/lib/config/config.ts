@@ -6,7 +6,7 @@ export type ConfigMqtt = {
     username?: string
     password?: string
     retain: boolean
-    qos: (0|1|2)
+    qos: (0 | 1 | 2)
     "bridge-info"?: boolean
     "bridge-info-topic"?: string
 }
@@ -17,7 +17,7 @@ export type ConfigMiele = {
     username: string
     password: string
 
-    mode: "sse"|"polling"
+    mode: "sse" | "polling"
     "polling-interval": number
 
     token?: {
@@ -55,7 +55,7 @@ export const applyDefaults = (config: any) => {
     return {
         ...configDefaults,
         ...config,
-        miele: { ...mieleDefaults, ...config.hue },
+        miele: { ...mieleDefaults, ...config.miele },
         mqtt: { ...mqttDefaults, ...config.mqtt }
     } as Config
 }

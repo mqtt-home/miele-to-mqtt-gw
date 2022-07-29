@@ -5,7 +5,7 @@ export type MieleDevice = {
 
 export enum DeviceStatus {
     UNKNOWN = -1,
-    RESERVED= 0,
+    RESERVED = 0,
     OFF = 1,
     ON = 2,
     PROGRAMMED = 3,
@@ -14,7 +14,7 @@ export enum DeviceStatus {
     PAUSE = 6,
     END_PROGRAMMED = 7,
     FAILURE = 8,
-    PROGRAMME_INTERRUPTED =9,
+    PROGRAMME_INTERRUPTED = 9,
     IDLE = 10,
     RINSE_HOLD = 11,
     SERVICE = 12,
@@ -35,5 +35,5 @@ export enum Phase {
     FINAL_RINSE = 1798,
     DRYING = 1799,
     FINISHED = 1800,
-    PRE_WASH2 =1801
+    PRE_WASH2 = 1801
 }

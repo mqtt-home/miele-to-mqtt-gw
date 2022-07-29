@@ -1,4 +1,4 @@
-import { ConfigMiele, getAppConfig } from "../config/config";
+import { ConfigMiele, getAppConfig } from "../../config/config"
 
 export const fetchCode = async (config: ConfigMiele = getAppConfig().miele) => {
     const response = await fetch("https://api.mcs3.miele.com/oauth/auth", {

@@ -1,6 +1,6 @@
-import Duration from "@icholy/duration";
+import Duration from "@icholy/duration"
 
-export const parseDuration = (array: number[] | undefined ) => {
+export const parseDuration = (array: number[] | undefined) => {
     if (!array) {
         return Duration.seconds(0)
     }
