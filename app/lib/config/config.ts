@@ -72,7 +72,3 @@ export const applyConfig = (config: any) => {
 export const getAppConfig = () => {
     return appConfig
 }
-
-export const setTestConfig = (config: Config) => {
-    appConfig = config
-}

@@ -8,7 +8,8 @@ export type TokenResult = {
     expires_in: number
 }
 
-export const fetchToken = async (code: string, config: ConfigMiele = getAppConfig().miele) => {
+export const fetchToken = async (code: string) => {
+    const config: ConfigMiele = getAppConfig().miele
     const response = await axios.post(
         "https://api.mcs3.miele.com/thirdparty/token",
         new URLSearchParams({

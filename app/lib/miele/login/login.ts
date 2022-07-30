@@ -1,14 +1,16 @@
 import axios from "axios"
-import { ConfigMiele, getAppConfig } from "../../config/config"
+import { getAppConfig } from "../../config/config"
 import { fetchCode } from "./code"
 import { fetchToken, TokenResult } from "./token"
 
-export const login = async (config: ConfigMiele = getAppConfig().miele) => {
-    const code = await fetchCode(config)
-    return await fetchToken(code, config)
+export const login = async () => {
+    const code = await fetchCode()
+    return await fetchToken(code)
 }
 
-export const refreshToken = async (refresh_token: string, config: ConfigMiele = getAppConfig().miele) => {
+/* eslint-disable camelcase */
+export const refreshToken = async (refresh_token: string) => {
+    const config = getAppConfig().miele
     const response = await axios.post(
         "https://api.mcs3.miele.com/thirdparty/token",
         new URLSearchParams({

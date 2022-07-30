@@ -1,5 +1,9 @@
 import EventSource from "eventsource"
 import { log } from "../logger"
+import { convertDevices } from "./miele"
+import { MieleDevice } from "./miele-types"
+
+type DevicesListener = (devices: MieleDevice[]) => void
 
 export const startSSE = (token: string) => {
     log.info("Starting Server-Sent events")
@@ -18,5 +22,13 @@ export const startSSE = (token: string) => {
             log.error(JSON.stringify(err))
         }
     }
-    return sse
+
+    const registerDevicesListener = (listener: DevicesListener) => {
+        sse.addEventListener("devices", (event) => listener(convertDevices(JSON.parse(event.data))))
+    }
+
+    return {
+        sse,
+        registerDevicesListener
+    }
 }

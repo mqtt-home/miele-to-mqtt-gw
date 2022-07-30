@@ -3,7 +3,7 @@ import mqtt from "mqtt"
 import { getAppConfig } from "../config/config"
 import { log } from "../logger"
 
-export const makeid = (length: number) => {
+export const makeId = (length: number) => {
     let result = ""
     const characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
     const charactersLength = characters.length
@@ -64,7 +64,7 @@ export const connectMqtt: (() => Promise<() => void>) = () => {
     const options = {
         clean: true,
         connectTimeout: 4000,
-        clientId: makeid(9),
+        clientId: makeId(9),
         username: config.mqtt.username,
         password: config.mqtt.password,
         will: willMessage()
@@ -88,17 +88,5 @@ export const connectMqtt: (() => Promise<() => void>) = () => {
                 }
             })
         })
-
-        // client.on("message", async (topic, message) => {
-        //     const resource = state.resourcesByTopic.get(topic)
-        //     if (resource) {
-        //         if (topic.endsWith("/get") || topic.endsWith("/state")) {
-        //             publishResource(resource)
-        //         }
-        //         else if (topic.endsWith("/set")) {
-        //             await putMessage(resource, message)
-        //         }
-        //     }
-        // })
     })
 }

@@ -6,19 +6,12 @@ describe("Config", () => {
             mqtt: {
                 url: "tcp://192.168.1.1:1883",
                 topic: "hue"
-            },
-            hue: {
-                host: "192.168.1.1",
-                "api-key": "some-api-key"
             }
         }
 
         expect(applyDefaults(config)).toStrictEqual({
-            hue: {
-                "api-key": "some-api-key",
-                host: "192.168.1.1",
-                port: 443,
-                protocol: "https"
+            miele: {
+                mode: "sse"
             },
             mqtt: {
                 "bridge-info": true,
@@ -27,7 +20,6 @@ describe("Config", () => {
                 topic: "hue",
                 url: "tcp://192.168.1.1:1883"
             },
-            names: {},
             "send-full-update": true
         })
 

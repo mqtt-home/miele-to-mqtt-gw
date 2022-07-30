@@ -1,9 +1,12 @@
 import { ConfigMiele, getAppConfig } from "../../config/config"
 import axios from "axios"
 
-export const fetchCode = async (config: ConfigMiele = getAppConfig().miele) => {
+export const codeUrl = "https://api.mcs3.miele.com/oauth/auth"
+
+export const fetchCode = async () => {
+    const config: ConfigMiele = getAppConfig().miele
     const response = await axios.post(
-        "https://api.mcs3.miele.com/oauth/auth",
+        codeUrl,
         new URLSearchParams({
             email: config.username,
             password: config.password,
