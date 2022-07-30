@@ -1,4 +1,5 @@
-import { applyDefaults } from "./config"
+import path from "path"
+import { applyDefaults, getAppConfig, loadConfig } from "./config"
 
 describe("Config", () => {
     test("default values", async () => {
@@ -40,5 +41,10 @@ describe("Config", () => {
         }
 
         expect(applyDefaults(config)["send-full-update"]).toBeFalsy()
+    })
+
+    test("load from file", () => {
+        loadConfig(path.join(__dirname, "../../../production/config/config-example.json"))
+        expect(getAppConfig().miele.mode).toBe("sse")
     })
 })

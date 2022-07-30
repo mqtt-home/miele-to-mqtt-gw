@@ -1,0 +1,14 @@
+{
+  "mqtt": {
+    "url": "tcp://192.168.0.1:1883",
+    "retain": true,
+    "topic": "home/miele",
+    "qos": 2
+  },
+  "miele": {
+    "client-id": "your-client-id",
+    "client-secret": "your-client-secret",
+    "username": "your-mail-address",
+    "password": "your-password"
+  }
+}
