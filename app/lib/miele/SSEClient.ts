@@ -15,7 +15,7 @@ export const startSSE = (token: string) => {
     const sse = new EventSource("https://api.mcs3.miele.com/v1/devices/all/events", eventSourceInitDict)
     sse.onerror = (err: any) => {
         if (err) {
-            log.error(err)
+            log.error(JSON.stringify(err))
         }
     }
     return sse

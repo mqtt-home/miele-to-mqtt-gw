@@ -17,7 +17,7 @@ export const startApp = async () => {
     const sse = startSSE(token.access_token)
     sse.addEventListener("devices", (event) => {
         for (const device of convertDevices(JSON.parse(event.data))) {
-            console.log(smallMessage(device))
+            log.info(JSON.stringify(smallMessage(device)))
         }
     })
     log.info("Application is now ready.")

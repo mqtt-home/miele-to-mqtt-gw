@@ -1,16 +1,20 @@
 import Duration from "@icholy/duration"
+import axios from "axios"
 import { add, formatHours, formatTime, parseDuration } from "./duration"
 import { DeviceStatus, MieleDevice, Phase } from "./miele-types"
+import fetch from "node-fetch"
 
 export const fetchDevices = async (token: string) => {
-    const response = await fetch("https://api.mcs3.miele.com/v1/devices/", {
-        headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json"
-        }
-    })
+    const response = await axios.get(
+        "https://api.mcs3.miele.com/v1/devices/",
+        {
+            headers: {
+                Authorization: `Bearer ${token}`,
+                "Content-Type": "application/json"
+            }
+        })
 
-    return convertDevices(await response.json())
+    return convertDevices(await response.data)
 }
 
 export const convertDevices = (devices: any) => {

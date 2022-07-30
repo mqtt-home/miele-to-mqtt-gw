@@ -7,7 +7,7 @@
         "test": "jest",
         "coverage": "jest --coverage",
         "prestart": "tsc -p tsconfig.json",
-        "start": "node dist/index.js",
+        "start": "node --trace-warnings dist/index.js",
         "clean": "rimraf dist",
         "prebuild": "run-s clean",
         "build": "ncc build lib/index.ts -o dist",
