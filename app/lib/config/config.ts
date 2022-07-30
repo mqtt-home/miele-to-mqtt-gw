@@ -18,7 +18,7 @@ export type ConfigMiele = {
     password: string
 
     mode: "sse" | "polling"
-    "polling-interval": number
+    "polling-interval"?: number
 
     token?: {
         access: string,
@@ -43,8 +43,7 @@ const mqttDefaults = {
 }
 
 const mieleDefaults = {
-    mode: "polling",
-    "polling-interval": 60
+    mode: "sse"
 }
 
 const configDefaults = {
@@ -63,6 +62,7 @@ export const applyDefaults = (config: any) => {
 export const loadConfig = (file: string) => {
     const buffer = fs.readFileSync(file)
     applyConfig(JSON.parse(buffer.toString()))
+    return appConfig
 }
 
 export const applyConfig = (config: any) => {

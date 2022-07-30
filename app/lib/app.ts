@@ -3,7 +3,7 @@ import { log } from "./logger"
 import { login } from "./miele/login/login"
 import { convertDevices, smallMessage } from "./miele/miele"
 import { startSSE } from "./miele/SSEClient"
-import { connectMqtt } from "./mqtt/mqtt-client"
+import { connectMqtt, publish } from "./mqtt/mqtt-client"
 
 export const triggerFullUpdate = async () => {
 }
@@ -18,6 +18,8 @@ export const startApp = async () => {
     sse.addEventListener("devices", (event) => {
         for (const device of convertDevices(JSON.parse(event.data))) {
             log.info(JSON.stringify(smallMessage(device)))
+            publish(smallMessage(device), device.id)
+            publish(device.data, `${device.id}/full`)
         }
     })
     log.info("Application is now ready.")

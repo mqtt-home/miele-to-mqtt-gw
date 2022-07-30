@@ -2,7 +2,6 @@ import Duration from "@icholy/duration"
 import axios from "axios"
 import { add, formatHours, formatTime, parseDuration } from "./duration"
 import { DeviceStatus, MieleDevice, Phase } from "./miele-types"
-import fetch from "node-fetch"
 
 export const fetchDevices = async (token: string) => {
     const response = await axios.get(

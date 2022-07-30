@@ -1,6 +1,6 @@
 {
     "name": "miele-to-mqtt",
-    "version": "1.0.0",
+    "version": "3.0.0",
     "description": "Miele To MQTT Gateway",
     "main": "index.js",
     "scripts": {
@@ -10,7 +10,7 @@
         "start": "node --trace-warnings dist/index.js",
         "clean": "rimraf dist",
         "prebuild": "run-s clean",
-        "build": "ncc build lib/index.ts -o dist",
+        "build": "ncc build lib/index.ts -o dist --minify",
         "lint": "eslint lib/** --ext .ts",
         "lint:fix": "eslint lib/** --ext .ts --fix",
         "generate-test-stubs": "node dist/lib/test-stub-generator.js"
