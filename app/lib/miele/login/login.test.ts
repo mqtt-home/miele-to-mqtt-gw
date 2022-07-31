@@ -1,6 +1,8 @@
+import Duration from "@icholy/duration"
 import { applyConfig } from "../../config/config"
+import { add } from "../duration"
 import { testConfig } from "../miele-testutils"
-import { convertToken, getToken, needsRefresh, refreshToken } from "./login"
+import { convertToken, getToken, login, needsRefresh, refreshToken, setToken } from "./login"
 
 describe("login", () => {
     beforeAll(() => {
@@ -14,13 +16,25 @@ describe("login", () => {
         expect(token.token_type).toBeDefined()
         expect(token.expiresAt).toBeDefined()
 
+        // Let's assume we are 100 days in the future and the token is expired
+        await login(add(new Date(), Duration.days(100)))
         const refreshed = await refreshToken(token.refresh_token)
         expect(refreshed.access_token).toBeDefined()
         expect(refreshed.refresh_token).toBeDefined()
         expect(refreshed.token_type).toBeDefined()
         expect(refreshed.expires_in).toBeDefined()
 
+        // Let's assume the refresh failed, as the refresh token is already invalid
+        setToken({...refreshed, refresh_token: "invalid", expiresAt: add(new Date(), Duration.days(1))})
+        await login(add(new Date(), Duration.days(100)))
+        const refreshed2 = await refreshToken(token.refresh_token)
+        expect(refreshed2.access_token).toBeDefined()
+        expect(refreshed2.refresh_token).toBeDefined()
+        expect(refreshed2.token_type).toBeDefined()
+        expect(refreshed2.expires_in).toBeDefined()
+
         expect(token.access_token).not.toBe(refreshed.access_token)
+        expect(refreshed.access_token).not.toBe(refreshed2.access_token)
     })
 
     test("convert expiry", () => {

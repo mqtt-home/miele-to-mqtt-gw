@@ -4,6 +4,7 @@ const forceEnv = (propName: string) => {
     // macOS note: sudo vi /etc/launchd.conf
     const value = process.env[propName]
     if (!value) {
+        /* istanbul ignore next */
         throw Error(`"ENV property ${propName} is required to run this test case."`)
     }
     return value

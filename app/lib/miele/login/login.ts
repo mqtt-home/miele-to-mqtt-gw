@@ -8,6 +8,10 @@ import { fetchToken, Token, TokenResult } from "./token"
 
 let token: Token
 
+export const setToken = (newToken: Token) => {
+    token = newToken
+}
+
 export const convertToken = (mieleToken: TokenResult, now = new Date()) => {
     const copy = {
         ...mieleToken
@@ -25,9 +29,9 @@ export const needsRefresh = (tokenToTest = token, now = new Date()) => {
     return (tokenToTest && tokenToTest.expiresAt <= inOneDay)
 }
 
-export const login = async () => {
+export const login = async (now = new Date()) => {
     try {
-        if (token && needsRefresh()) {
+        if (token && needsRefresh(token, now)) {
             // Refresh token
             token = convertToken(await refreshToken(token.refresh_token))
         }
