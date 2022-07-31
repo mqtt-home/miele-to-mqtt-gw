@@ -6,6 +6,15 @@ Convert the miele@home data to MQTT messages
 
 This application will post two MQTT messages for each connected device: one short message and a full message.
 
+# Releases
+
+## Production (2.x)
+The current production version is 2.x and is implemented in Java.
+See https://github.com/mqtt-home/miele-to-mqtt-gw/tree/2.x-java
+
+## Prerelease (3.x)
+The prerelease is version 3.x and implemented in TypeScript.
+
 ## Example short message
 
 The short message is already parsed/interpreted and contains only the most relevant information.
