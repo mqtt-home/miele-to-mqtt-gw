@@ -1,13 +1,5 @@
-# ---- Prod ----
-FROM openjdk:8-jdk-alpine
-LABEL maintainer="Philipp Arndt <2f.mail@gmx.de>"
-LABEL version="1.0"
-LABEL description="Miele to mqtt gateway"
+FROM node:18.6-alpine
+COPY app/dist /opt/app/
+WORKDIR /opt/app/
 
-RUN mkdir /opt/app
-WORKDIR /opt/app
-COPY src/de.rnd7.mieletomqtt/target/miele-to-mqtt-gw.jar .
-COPY src/logback.xml .
-
-ENV LOGBACK_XML ./miele-to-mqtt-gw.jar/logback.xml
-CMD java -Dlogback.configurationFile=$LOGBACK_XML -jar ./miele-to-mqtt-gw.jar /var/lib/miele-to-mqtt-gw/config.json
+CMD ["node", "index.js", "/var/lib/miele-to-mqtt-gw/config.json"]

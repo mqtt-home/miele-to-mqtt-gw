@@ -1,0 +1,10 @@
+version: '2'
+
+services:
+  huemqtt:
+    hostname: mielemqtt
+    image: pharndt/mielemqtt:${VERSION}
+    build: .
+    volumes:
+      - ./production/config:/var/lib/miele-to-mqtt-gw:ro
+    restart: "no"
