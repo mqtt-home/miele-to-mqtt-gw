@@ -27,7 +27,12 @@ jobs:
         run: |
           npm run lint
           npm test
-
+        env:
+          MIELE_CLIENT_ID: ${{ secrets.MIELE_CLIENT_ID }}
+          MIELE_CLIENT_SECRET: ${{ secrets.MIELE_CLIENT_SECRET }}
+          MIELE_PASSWORD: ${{ secrets.MIELE_PASSWORD }}
+          MIELE_USERNAME: ${{ secrets.MIELE_USERNAME }}
+          
       - name: Build
         working-directory: app
         run: |
