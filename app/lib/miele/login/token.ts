@@ -8,6 +8,13 @@ export type TokenResult = {
     expires_in: number
 }
 
+export type Token = {
+    access_token: string,
+    refresh_token: string,
+    token_type: string,
+    expiresAt: Date
+}
+
 export const fetchToken = async (code: string) => {
     const config: ConfigMiele = getAppConfig().miele
     const response = await axios.post(

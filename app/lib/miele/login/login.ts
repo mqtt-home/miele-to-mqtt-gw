@@ -1,11 +1,53 @@
+import Duration from "@icholy/duration"
 import axios from "axios"
 import { getAppConfig } from "../../config/config"
+import { log } from "../../logger"
+import { add } from "../duration"
 import { fetchCode } from "./code"
-import { fetchToken, TokenResult } from "./token"
+import { fetchToken, Token, TokenResult } from "./token"
+
+let token: Token
+
+export const convertToken = (mieleToken: TokenResult, now = new Date()) => {
+    const copy = {
+        ...mieleToken
+    } as any
+    delete copy.expires_in
+
+    return {
+        ...copy,
+        expiresAt: add(now, Duration.seconds(mieleToken.expires_in))
+    } as Token
+}
+
+export const needsRefresh = (tokenToTest = token, now = new Date()) => {
+    const inOneDay = add(now, Duration.days(1))
+    return (tokenToTest && tokenToTest.expiresAt <= inOneDay)
+}
 
 export const login = async () => {
-    const code = await fetchCode()
-    return await fetchToken(code)
+    try {
+        if (token && needsRefresh()) {
+            // Refresh token
+            token = convertToken(await refreshToken(token.refresh_token))
+        }
+    }
+    catch (e) {
+        log.error(`Token refresh failed. Trying to login with username/password. ${e}`)
+    }
+
+    if (!token) {
+        const code = await fetchCode()
+        token = convertToken(await fetchToken(code))
+    }
+}
+
+export const getToken = async () => {
+    if (!token || needsRefresh()) {
+        await login()
+    }
+
+    return token
 }
 
 /* eslint-disable camelcase */

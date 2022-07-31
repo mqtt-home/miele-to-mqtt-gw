@@ -1,5 +1,5 @@
 import { applyConfig } from "../config/config"
-import { login } from "./login/login"
+import { getToken } from "./login/login"
 import { testConfig } from "./miele-testutils"
 import { MieleDevice } from "./miele-types"
 import { startSSE } from "./sse-client"
@@ -10,7 +10,7 @@ describe("sse-client", () => {
     })
 
     test("integration", async () => {
-        const token = await login()
+        const token = await getToken()
         const { sse, registerDevicesListener } = startSSE(token.access_token)
 
         const devices = await new Promise<MieleDevice[]>((resolve) => {

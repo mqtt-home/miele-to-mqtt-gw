@@ -4,7 +4,6 @@ import { GenericContainer, StartedTestContainer, Wait } from "testcontainers"
 import { curlHealthTest, JEST_CONTAINER_TIMEOUT, JEST_DEFAULT_TIMEOUT } from "../../test/test-utils"
 import { startApp } from "../app"
 import { applyConfig, ConfigMqtt, getAppConfig } from "../config/config"
-import { log } from "../logger"
 import { testConfig } from "../miele/miele-testutils"
 import { createMqttInstance, MqttInstance, subscribe } from "../mqtt/mqtt-client"
 jest.setTimeout(JEST_CONTAINER_TIMEOUT)
