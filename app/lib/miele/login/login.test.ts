@@ -25,7 +25,7 @@ describe("login", () => {
         expect(refreshed.expires_in).toBeDefined()
 
         // Let's assume the refresh failed, as the refresh token is already invalid
-        setToken({...refreshed, refresh_token: "invalid", expiresAt: add(new Date(), Duration.days(1))})
+        setToken({ ...refreshed, refresh_token: "invalid", expiresAt: add(new Date(), Duration.days(1)) })
         await login(add(new Date(), Duration.days(100)))
         const refreshed2 = await refreshToken(token.refresh_token)
         expect(refreshed2.access_token).toBeDefined()
