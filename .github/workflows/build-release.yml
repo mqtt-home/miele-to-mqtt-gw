@@ -56,7 +56,7 @@ jobs:
 
       - name: Build docker container and push
         id: docker_build
-        uses: docker/build-push-action@v3
+        uses: docker/build-push-action@v4
         env:
           RELEASE_VERSION: ${{ steps.next.outputs.version }}
         with:
@@ -70,13 +70,13 @@ jobs:
 
       - name: Create Release
         id: create_release
-        uses: actions/create-release@v1
+        uses: ncipollo/release-action@v1@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           RELEASE_VERSION: ${{ steps.next.outputs.version }}
         with:
-          tag_name: ${{env.RELEASE_VERSION}}
-          release_name: ${{env.RELEASE_VERSION}}
+          tag: ${{env.RELEASE_VERSION}}
+          name: ${{env.RELEASE_VERSION}}
           body: |
             Docker tag: `pharndt/mielemqtt:${{env.RELEASE_VERSION}}-pre`
 
