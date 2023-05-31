@@ -6,18 +6,18 @@ import chalk from "chalk"
 export const logLevelColor = (level: string) => {
     const lvl = level.toUpperCase()
     switch (lvl) {
-        case "FATAL":
-        case "ERROR":
-            return chalk.red(lvl)
-        case "WARN":
-            return chalk.yellow(lvl)
-        case "INFO":
-            return chalk.blue(lvl)
-        case "DEBUG":
-        case "TRACE":
-            return chalk.magenta(lvl)
-        default:
-            return lvl
+    case "FATAL":
+    case "ERROR":
+        return chalk.red(lvl)
+    case "WARN":
+        return chalk.yellow(lvl)
+    case "INFO":
+        return chalk.blue(lvl)
+    case "DEBUG":
+    case "TRACE":
+        return chalk.magenta(lvl)
+    default:
+        return lvl
     }
 }
 

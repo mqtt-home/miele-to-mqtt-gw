@@ -45,7 +45,6 @@ const assertConnection = async () => {
     }
 }
 
-
 export const login = async (now = new Date()) => {
     const connection = await assertConnection()
 
