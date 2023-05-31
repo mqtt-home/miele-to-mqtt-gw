@@ -82,8 +82,8 @@ See [fullmessage-example](fullmessage-example.md)
     "client-secret": "12345678901234567890123456789012",
     "mode": "sse",
     "token": {
-      "access": "DE_access_token",
-      "refresh": "DE_refresh_token"
+      "access": "access_token",
+      "refresh": "refresh_token"
     }
   }
 }
