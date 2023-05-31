@@ -85,4 +85,4 @@ jobs:
               - ...
 
           draft: false
-          prerelease: true
+          prerelease: false
