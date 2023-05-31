@@ -1,8 +1,9 @@
 import Duration from "@icholy/duration"
 import axios from "axios"
-import { getAppConfig } from "../../config/config"
+import { getAppConfig, persistToken } from "../../config/config"
 import { log } from "../../logger"
 import { add } from "../duration"
+import { fetchDevices } from "../miele"
 import { fetchCode } from "./code"
 import { fetchToken, Token, TokenResult } from "./token"
 
@@ -29,21 +30,47 @@ export const needsRefresh = (tokenToTest = token, now = new Date()) => {
     return (tokenToTest && tokenToTest.expiresAt <= inOneDay)
 }
 
-export const login = async (now = new Date()) => {
+const assertConnection = async () => {
+    if (!token) {
+        return false
+    }
+
     try {
-        if (token && needsRefresh(token, now)) {
+        await fetchDevices(token.access_token)
+        return true
+    }
+    catch (e) {
+        log.error("Connection to Miele failed. Trying to login again.", e)
+        return false
+    }
+}
+
+export const login = async (now = new Date()) => {
+    let connected = await assertConnection()
+
+    try {
+        if (!connected || (token && needsRefresh(token, now))) {
             // Refresh token
             token = convertToken(await refreshToken(token.refresh_token))
         }
     }
     catch (e) {
         log.error(`Token refresh failed. Trying to login with username/password. ${e}`)
+        connected = false
     }
 
-    if (!token) {
+    if (!connected || !token) {
         const code = await fetchCode()
         token = convertToken(await fetchToken(code))
     }
+
+    persistToken({
+        access: token.access_token,
+        refresh: token.refresh_token,
+        validUntil: token.expiresAt.toISOString()
+    })
+
+    return token
 }
 
 export const getToken = async () => {
@@ -56,6 +83,7 @@ export const getToken = async () => {
 
 /* eslint-disable camelcase */
 export const refreshToken = async (refresh_token: string) => {
+    log.info("Refreshing token")
     const config = getAppConfig().miele
     const response = await axios.post(
         "https://api.mcs3.miele.com/thirdparty/token",
