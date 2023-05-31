@@ -51,7 +51,7 @@
         "eventsource": "2.0.2",
         "mqtt": "4.3.7",
         "node-cron": "3.0.2",
-        "winston": "3.8.1",
+        "winston": "3.9.0",
         "winston-transport": "4.5.0"
     }
 }
