@@ -49,7 +49,7 @@ export const login = async (now = new Date()) => {
     let connected = await assertConnection()
 
     try {
-        if (!connected || token && needsRefresh(token, now)) {
+        if (!connected || (token && needsRefresh(token, now))) {
             // Refresh token
             token = convertToken(await refreshToken(token.refresh_token))
         }
