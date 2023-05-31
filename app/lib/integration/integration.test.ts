@@ -1,7 +1,7 @@
 import * as Buffer from "buffer"
 import path from "path"
 import { GenericContainer, StartedTestContainer, Wait } from "testcontainers"
-import { curlHealthTest, JEST_INTEGRATION_TIMEOUT, JEST_DEFAULT_TIMEOUT } from "../../test/test-utils"
+import { JEST_INTEGRATION_TIMEOUT, JEST_DEFAULT_TIMEOUT } from "../../test/test-utils"
 import { startApp } from "../app"
 import { applyConfig, ConfigMqtt, getAppConfig } from "../config/config"
 import { log } from "../logger"
@@ -55,7 +55,7 @@ describe("Integration test", () => {
         mqtt = await mqttContainer
             .withExposedPorts(1883, 8161)
             .withHealthCheck({
-                test: ["CMD-SHELL", "curl -f http://localhost:8161 || exit 1"],
+                test: ["CMD-SHELL", "curl -f http://localhost:8161 || exit 1"]
             })
             .withWaitStrategy(Wait.forHealthCheck())
             .start()

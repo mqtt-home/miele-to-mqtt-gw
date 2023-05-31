@@ -1,9 +1,11 @@
 import Duration from "@icholy/duration"
+import { JEST_INTEGRATION_TIMEOUT } from "../../../test/test-utils"
 import { applyConfig } from "../../config/config"
 import { log } from "../../logger"
 import { add } from "../duration"
 import { testConfig } from "../miele-testutils"
 import { convertToken, getToken, login, needsRefresh, refreshToken, setToken } from "./login"
+jest.setTimeout(JEST_INTEGRATION_TIMEOUT)
 
 describe("login", () => {
     beforeAll(() => {
