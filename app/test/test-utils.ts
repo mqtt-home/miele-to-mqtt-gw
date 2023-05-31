@@ -1,4 +1,4 @@
-export const JEST_CONTAINER_TIMEOUT = 60 * 5 * 1000
+export const JEST_INTEGRATION_TIMEOUT = 60 * 5 * 1000
 export const JEST_DEFAULT_TIMEOUT = 5 * 1000
 
 export const curlHealthTest = (host: string, port: number) => {

@@ -1,12 +1,13 @@
 import * as Buffer from "buffer"
 import path from "path"
 import { GenericContainer, StartedTestContainer, Wait } from "testcontainers"
-import { curlHealthTest, JEST_CONTAINER_TIMEOUT, JEST_DEFAULT_TIMEOUT } from "../../test/test-utils"
+import { curlHealthTest, JEST_INTEGRATION_TIMEOUT, JEST_DEFAULT_TIMEOUT } from "../../test/test-utils"
 import { startApp } from "../app"
 import { applyConfig, ConfigMqtt, getAppConfig } from "../config/config"
+import { log } from "../logger"
 import { testConfig } from "../miele/miele-testutils"
 import { createMqttInstance, MqttInstance, subscribe } from "../mqtt/mqtt-client"
-jest.setTimeout(JEST_CONTAINER_TIMEOUT)
+jest.setTimeout(JEST_INTEGRATION_TIMEOUT)
 
 type Message = {
     topic: string
@@ -45,6 +46,8 @@ describe("Integration test", () => {
     }
 
     beforeAll(async () => {
+        log.off()
+
         const buildRoot = path.resolve(__dirname, "../../test")
         const mqttContainer = await GenericContainer.fromDockerfile(path.resolve(buildRoot, "activemq"))
             .build()
