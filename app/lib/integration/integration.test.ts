@@ -54,7 +54,9 @@ describe("Integration test", () => {
 
         mqtt = await mqttContainer
             .withExposedPorts(1883, 8161)
-            .withHealthCheck(curlHealthTest("localhost", 8161))
+            .withHealthCheck({
+                test: ["CMD-SHELL", "curl -f http://localhost:8161 || exit 1"],
+            })
             .withWaitStrategy(Wait.forHealthCheck())
             .start()
 
