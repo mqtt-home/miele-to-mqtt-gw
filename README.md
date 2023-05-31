@@ -37,6 +37,8 @@ See [fullmessage-example](fullmessage-example.md)
 
 ## Example configuration
 
+### With username/password
+
 ```json
 {
   "mqtt": {
@@ -56,12 +58,38 @@ See [fullmessage-example](fullmessage-example.md)
     "polling-interval": 30,
     "username": "miele_at_home_user@example.com",
     "password": "miele_at_home_password",
-    "mode": "polling"
-  },
-  
-  "timezone": "GMT+1"
+    "mode": "sse"
+  }
 }
 ```
+
+### With access token
+```json
+{
+  "mqtt": {
+    "url": "tcp://192.168.2.2:1883",
+    "client-id": "miele-mqtt-gw",
+    "username": "username",
+    "password": "password",
+    "retain": true,
+
+    "topic": "home/miele",
+    "deduplicate": true
+  },
+
+  "miele": {
+    "client-id": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+    "client-secret": "12345678901234567890123456789012",
+    "mode": "sse",
+    "token": {
+      "access": "DE_access_token",
+      "refresh": "DE_refresh_token"
+    }
+  }
+}
+```
+
+Make sure you have write access to the configuration file, so that the token can be persisted.
 
 # Use server-sent events
 

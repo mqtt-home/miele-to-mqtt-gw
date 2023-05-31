@@ -1,8 +1,9 @@
 import EventSource from "eventsource"
 import cron from "node-cron"
 import { log } from "./logger"
-import { getToken, needsRefresh } from "./miele/login/login"
-import { smallMessage } from "./miele/miele"
+import { getToken, login, needsRefresh } from "./miele/login/login"
+import { Token } from "./miele/login/token"
+import { fetchDevices, smallMessage } from "./miele/miele"
 import { startSSE } from "./miele/sse-client"
 import { connectMqtt, publish } from "./mqtt/mqtt-client"
 
@@ -17,7 +18,7 @@ export const triggerFullUpdate = async () => {
 let eventSource: EventSource
 
 const start = async () => {
-    const token = await getToken()
+    const token = await (login())
 
     const { sse, registerDevicesListener } = startSSE(token.access_token)
 

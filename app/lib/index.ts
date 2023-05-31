@@ -1,8 +1,9 @@
 /* istanbul ignore file */
+import Duration from "@icholy/duration"
 import * as path from "path"
 import { startApp } from "./app"
 
-import { loadConfig } from "./config/config"
+import { loadConfig, recoverToken } from "./config/config"
 import { log } from "./logger"
 
 if (process.argv.length !== 3) {

@@ -4,7 +4,7 @@
     "description": "Miele To MQTT Gateway",
     "main": "index.js",
     "scripts": {
-        "test": "jest --coverage --forceExit",
+        "test": "jest --detectOpenHandles",
         "coverage": "jest --coverage",
         "prestart": "tsc -p tsconfig.json",
         "start": "node --trace-warnings dist/lib/index.js",
