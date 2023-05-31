@@ -20,7 +20,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
 
-      - uses: philipparndt/get-release-number@v1
+      - uses: philipparndt/get-release-number@v2
         id: next
         with:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
