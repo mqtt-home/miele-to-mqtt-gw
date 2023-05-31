@@ -46,19 +46,20 @@ const assertConnection = async () => {
 }
 
 export const login = async (now = new Date()) => {
-    const connection = await assertConnection()
+    let connected = await assertConnection()
 
     try {
-        if (token && (needsRefresh(token, now) || !connection)) {
+        if (!connected || token && needsRefresh(token, now)) {
             // Refresh token
             token = convertToken(await refreshToken(token.refresh_token))
         }
     }
     catch (e) {
         log.error(`Token refresh failed. Trying to login with username/password. ${e}`)
+        connected = false
     }
 
-    if (!token || !connection) {
+    if (!connected || !token) {
         const code = await fetchCode()
         token = convertToken(await fetchToken(code))
     }

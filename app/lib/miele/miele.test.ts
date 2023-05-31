@@ -1,4 +1,5 @@
 import { applyConfig } from "../config/config"
+import { log } from "../logger"
 import { getToken } from "./login/login"
 import { fetchDevices, smallMessage } from "./miele"
 import { testConfig } from "./miele-testutils"
@@ -6,6 +7,11 @@ import { testConfig } from "./miele-testutils"
 describe("miele", () => {
     beforeAll(() => {
         applyConfig(testConfig())
+        log.off()
+    })
+
+    afterAll(() => {
+        log.on()
     })
 
     test("fetch devices", async () => {

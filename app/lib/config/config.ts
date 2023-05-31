@@ -65,7 +65,7 @@ export const applyDefaults = (config: any) => {
     } as Config
 }
 
-let configFile = ""
+let configFile: string
 
 export const loadConfig = (file: string) => {
     configFile = file
@@ -80,6 +80,11 @@ const equals = (obj1: any, obj2: any) => {
 }
 
 export const persistToken = (token: ConfigToken) => {
+    if (!configFile) {
+        log.warn("No config file set. Not persisting token.")
+        return
+    }
+
     try {
         const buffer = fs.readFileSync(configFile)
         const config: Config = JSON.parse(buffer.toString())

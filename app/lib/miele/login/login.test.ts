@@ -8,10 +8,15 @@ import { convertToken, getToken, login, needsRefresh, refreshToken, setToken } f
 describe("login", () => {
     beforeAll(() => {
         applyConfig(testConfig())
+        log.off()
+    })
+
+    afterAll(() => {
+        log.on()
     })
 
     test("login", async () => {
-        const token = await getToken()
+        let token = await getToken()
         expect(token.access_token).toBeDefined()
         expect(token.refresh_token).toBeDefined()
         expect(token.token_type).toBeDefined()
@@ -26,15 +31,13 @@ describe("login", () => {
         expect(refreshed.expires_in).toBeDefined()
 
         // Let's assume the refresh failed, as the refresh token is already invalid
-        log.off()
-        setToken({ ...refreshed, refresh_token: "invalid", expiresAt: add(new Date(), Duration.days(1)) })
-        await login(add(new Date(), Duration.days(100)))
+        setToken({ ...refreshed, refresh_token: "invalid", expiresAt: add(new Date(), Duration.hours(1)) })
+        token = await login(add(new Date(), Duration.days(100)))
         const refreshed2 = await refreshToken(token.refresh_token)
         expect(refreshed2.access_token).toBeDefined()
         expect(refreshed2.refresh_token).toBeDefined()
         expect(refreshed2.token_type).toBeDefined()
         expect(refreshed2.expires_in).toBeDefined()
-        log.on()
         expect(token.access_token).not.toBe(refreshed.access_token)
         expect(refreshed.access_token).not.toBe(refreshed2.access_token)
     })
