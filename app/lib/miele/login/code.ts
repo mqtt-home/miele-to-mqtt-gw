@@ -2,7 +2,7 @@ import { ConfigMiele, getAppConfig } from "../../config/config"
 import axios from "axios"
 
 export const codeUrl = "https://api.mcs3.miele.com/oauth/auth"
-
+// https://api.mcs3.miele.com/thirdparty/login/?redirect_uri=http://localhost:3000&client_id=76012106-c8c0-4901-8ff4-b3bf32696523&response_type=code&state=login&vgInformationSelector=de-DE
 export const fetchCode = async () => {
     const config: ConfigMiele = getAppConfig().miele
     const response = await axios.post(
@@ -14,7 +14,7 @@ export const fetchCode = async () => {
             state: "login",
             response_type: "code",
             client_id: config["client-id"],
-            vgInformationSelector: "de-DE"
+            vgInformationSelector: config["country-code"]
         }),
         {
             headers: {

@@ -71,6 +71,7 @@ See [fullmessage-example](fullmessage-example.md)
     "client-id": "miele-mqtt-gw",
     "username": "username",
     "password": "password",
+    "country-code": "de-DE",
     "retain": true,
 
     "topic": "home/miele",
@@ -88,6 +89,13 @@ See [fullmessage-example](fullmessage-example.md)
   }
 }
 ```
+
+#### Country code
+Two-letter language/country code. Examples:
+- `en-US`
+- `de-DE` (default)
+- `fr-FR`
+- etc.
 
 Make sure you have write access to the configuration file, so that the token can be persisted.
 
