@@ -65,8 +65,8 @@ jobs:
           platforms: linux/amd64,linux/arm/v6,linux/arm/v7,linux/arm64
           push: true
           tags: |
-            pharndt/mielemqtt:pre
-            pharndt/mielemqtt:${{env.RELEASE_VERSION}}-pre
+            pharndt/mielemqtt:latest
+            pharndt/mielemqtt:${{env.RELEASE_VERSION}}
 
       - name: Create Release
         id: create_release
@@ -78,7 +78,7 @@ jobs:
           tag: ${{env.RELEASE_VERSION}}
           name: ${{env.RELEASE_VERSION}}
           body: |
-            Docker tag: `pharndt/mielemqtt:${{env.RELEASE_VERSION}}-pre`
+            Docker tag: `pharndt/mielemqtt:${{env.RELEASE_VERSION}}`
 
             Changes in this Release
               - Dependency update

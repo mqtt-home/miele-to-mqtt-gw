@@ -24,6 +24,7 @@ export type ConfigToken = {
 export type ConfigMiele = {
     "client-id": string
     "client-secret": string
+    "country-code": string
     username: string
     password: string
 
@@ -49,7 +50,8 @@ const mqttDefaults = {
 }
 
 const mieleDefaults = {
-    mode: "sse"
+    mode: "sse",
+    "country-code": "de-DE"
 }
 
 const configDefaults = {

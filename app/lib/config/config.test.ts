@@ -12,6 +12,7 @@ describe("Config", () => {
 
         expect(applyDefaults(config)).toStrictEqual({
             miele: {
+                "country-code": "de-DE",
                 mode: "sse"
             },
             mqtt: {
