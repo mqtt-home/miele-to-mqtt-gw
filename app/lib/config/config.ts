@@ -39,6 +39,7 @@ export type Config = {
     miele: ConfigMiele
     names: any,
     "send-full-update": boolean
+    loglevel: string
 }
 
 let appConfig: Config
@@ -55,7 +56,8 @@ const mieleDefaults = {
 }
 
 const configDefaults = {
-    "send-full-update": true
+    "send-full-update": true,
+    loglevel: "info"
 }
 
 export const applyDefaults = (config: any) => {
@@ -125,6 +127,7 @@ export const recoverToken = () => {
 
 export const applyConfig = (config: any) => {
     appConfig = applyDefaults(config)
+    log.configure(appConfig.loglevel.toUpperCase())
 }
 
 export const getAppConfig = () => {

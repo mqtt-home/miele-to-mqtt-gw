@@ -141,16 +141,26 @@ docker-compose up -d
 
 ## Logging
 
-When you like to use a custom logging configuration, you can set the environment variable `LOGBACK_XML` in your compose
-file and put a `logback.xml` to the config folder.
+Set te timezone in the docker-compose file to your local timezone.
 
 Example:
 
 ```
 environment:
   TZ: "Europe/Berlin"
-  LOGBACK_XML: /var/lib/miele-to-mqtt-gw/logback.xml
 ```
+
+Set the log-level in the configuration file:
+```json
+{
+  "loglevel": "info"
+}
+```
+
+Valid log levels are:
+`fatal`, `error`, `warn`, `info`, `debug`, `trace`
+
+Not all levels are currently used.
 
 # build
 

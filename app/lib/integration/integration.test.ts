@@ -78,6 +78,8 @@ describe("Integration test", () => {
                 topic: "miele"
             }
         })
+
+        log.off()
     })
 
     afterAll(async () => {
