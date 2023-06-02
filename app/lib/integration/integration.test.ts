@@ -21,7 +21,7 @@ describe("Integration test", () => {
     const cleanUpTasks: CleanUpTask[] = []
 
     const decodePayload = (payload: Buffer) => {
-        let body = payload.toString("utf-8")
+        const body = payload.toString("utf-8")
         try {
             return JSON.parse(body)
         }
