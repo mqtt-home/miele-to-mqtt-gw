@@ -46,7 +46,6 @@ See [fullmessage-example](fullmessage-example.md)
     "client-id": "miele-mqtt-gw",
     "username": "username",
     "password": "password",
-    "country-code": "de-DE",
     "retain": true,
 
     "topic": "home/miele",
@@ -59,6 +58,7 @@ See [fullmessage-example](fullmessage-example.md)
     "polling-interval": 30,
     "username": "miele_at_home_user@example.com",
     "password": "miele_at_home_password",
+    "country-code": "de-DE",
     "mode": "sse"
   }
 }
@@ -72,7 +72,6 @@ See [fullmessage-example](fullmessage-example.md)
     "client-id": "miele-mqtt-gw",
     "username": "username",
     "password": "password",
-    "country-code": "de-DE",
     "retain": true,
 
     "topic": "home/miele",
