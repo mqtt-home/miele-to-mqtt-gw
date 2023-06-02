@@ -7,7 +7,7 @@ import { fetchDevices } from "../miele"
 import { fetchCode } from "./code"
 import { fetchToken, Token, TokenResult } from "./token"
 
-let token: Token
+let token: Token | undefined
 
 export const setToken = (newToken: Token) => {
     token = newToken
@@ -49,7 +49,7 @@ export const login = async (now = new Date()) => {
     let connected = await assertConnection()
 
     try {
-        if (!connected || (token && needsRefresh(token, now))) {
+        if (token?.refresh_token && (!connected || needsRefresh(token, now))) {
             // Refresh token
             token = convertToken(await refreshToken(token.refresh_token))
         }
@@ -78,7 +78,7 @@ export const getToken = async () => {
         await login()
     }
 
-    return token
+    return token!
 }
 
 /* eslint-disable camelcase */
