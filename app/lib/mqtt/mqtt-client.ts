@@ -27,6 +27,19 @@ export const publish = (message: any, topic: string) => {
     publishAbsolute(message, fullTopic)
 }
 
+export const convertBody = (message: any) => {
+    if (typeof message === "string") {
+        return message
+    }
+    else {
+        return  JSON.stringify(message, (key, value) => {
+            if (value !== null) {
+                return value
+            }
+        })
+    }
+}
+
 export const publishAbsolute = (message: any, fullTopic: string) => {
     const config = getAppConfig()
     if (!client) {
@@ -34,12 +47,7 @@ export const publishAbsolute = (message: any, fullTopic: string) => {
         return
     }
 
-    const body = JSON.stringify(message, (key, value) => {
-        if (value !== null) {
-            return value
-        }
-    })
-    client.publish(fullTopic, body, { retain: config.mqtt.retain })
+    client.publish(fullTopic, convertBody(message), { retain: config.mqtt.retain })
 }
 
 const brideTopic = () => {
