@@ -32,7 +32,7 @@ export const convertBody = (message: any) => {
         return message
     }
     else {
-        return  JSON.stringify(message, (key, value) => {
+        return JSON.stringify(message, (key, value) => {
             if (value !== null) {
                 return value
             }
