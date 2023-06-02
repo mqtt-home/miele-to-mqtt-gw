@@ -20,6 +20,17 @@ describe("Integration test", () => {
     let mqtt: StartedTestContainer
     const cleanUpTasks: CleanUpTask[] = []
 
+    const decodePayload = (payload: Buffer) => {
+        let body = payload.toString("utf-8")
+        try {
+            return JSON.parse(body)
+        }
+        catch (e) {
+            // keep string
+            return body
+        }
+    }
+
     /* eslint-disable no-async-promise-executor */
     const waitForMessages = (instance: MqttInstance, config: ConfigMqtt) => {
         return new Promise<Message[]>(async (resolve) => {
@@ -29,7 +40,7 @@ describe("Integration test", () => {
             const onMessage = (topic: string, payload: Buffer) => {
                 messages.push({
                     topic,
-                    payload: JSON.parse(payload.toString("utf-8"))
+                    payload: decodePayload(payload)
                 })
 
                 if (messages.length === 3) {
