@@ -46,6 +46,7 @@ See [fullmessage-example](fullmessage-example.md)
     "client-id": "miele-mqtt-gw",
     "username": "username",
     "password": "password",
+    "country-code": "de-DE",
     "retain": true,
 
     "topic": "home/miele",
