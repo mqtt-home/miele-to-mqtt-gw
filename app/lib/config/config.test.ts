@@ -11,6 +11,7 @@ describe("Config", () => {
         }
 
         expect(applyDefaults(config)).toStrictEqual({
+            loglevel: "info",
             miele: {
                 "country-code": "de-DE",
                 mode: "sse"

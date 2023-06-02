@@ -47,6 +47,7 @@ export const publishAbsolute = (message: any, fullTopic: string) => {
         return
     }
 
+    log.debug(`Publishing to ${fullTopic}`, message)
     client.publish(fullTopic, convertBody(message), { retain: config.mqtt.retain })
 }
 

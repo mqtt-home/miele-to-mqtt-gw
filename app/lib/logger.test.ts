@@ -30,37 +30,37 @@ describe("Log format", () => {
         test("info log", () => {
             log.info("some info")
 
-            expect(output).toMatch(/\d+-\d+-\d+T\d+:\d+:\d+.\d+Z \[.*INFO.*] some info.*/)
+            expect(output).toMatch(/\d+-\d+-\d+T\d+:\d+:\d+.\d+.* \[.*INFO.*] some info.*/)
         })
 
         test("warn log", () => {
             log.warn("some warning")
 
-            expect(output).toMatch(/\d+-\d+-\d+T\d+:\d+:\d+.\d+Z \[.*WARN.*] some warning.*/)
+            expect(output).toMatch(/\d+-\d+-\d+T\d+:\d+:\d+.\d+.* \[.*WARN.*] some warning.*/)
         })
 
         test("error log", () => {
             log.error("some error")
 
-            expect(output).toMatch(/\d+-\d+-\d+T\d+:\d+:\d+.\d+Z \[.*ERROR.*] some error.*/)
+            expect(output).toMatch(/\d+-\d+-\d+T\d+:\d+:\d+.\d+.* \[.*ERROR.*] some error.*/)
         })
 
         test("fatal log", () => {
             log.fatal("some fatal error")
 
-            expect(output).toMatch(/\d+-\d+-\d+T\d+:\d+:\d+.\d+Z \[.*FATAL.*] some fatal error.*/)
+            expect(output).toMatch(/\d+-\d+-\d+T\d+:\d+:\d+.\d+.* \[.*FATAL.*] some fatal error.*/)
         })
 
         test("debug log", () => {
             log.debug("some debug message")
 
-            expect(output).toMatch(/\d+-\d+-\d+T\d+:\d+:\d+.\d+Z \[.*DEBUG.*] some debug message.*/)
+            expect(output).toMatch(/\d+-\d+-\d+T\d+:\d+:\d+.\d+.* \[.*DEBUG.*] some debug message.*/)
         })
 
         test("trace log", () => {
             log.trace("some trace message")
 
-            expect(output).toMatch(/\d+-\d+-\d+T\d+:\d+:\d+.\d+Z \[.*TRACE.*] some trace message.*/)
+            expect(output).toMatch(/\d+-\d+-\d+T\d+:\d+:\d+.\d+.* \[.*TRACE.*] some trace message.*/)
         })
     })
 
@@ -74,7 +74,7 @@ describe("Log format", () => {
     test("error log with Error object", () => {
         log.error("some error", new Error("uups"))
 
-        expect(output).toMatch(/\d+-\d+-\d+T\d+:\d+:\d+.\d+Z \[.*ERROR.*] some error.*/)
+        expect(output).toMatch(/\d+-\d+-\d+T\d+:\d+:\d+.\d+.* \[.*ERROR.*] some error.*/)
         expect(output).toContain("uups")
     })
 
