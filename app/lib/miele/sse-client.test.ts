@@ -10,8 +10,8 @@ jest.setTimeout(JEST_INTEGRATION_TIMEOUT)
 
 describe("sse-client", () => {
     beforeAll(() => {
-        log.off()
         applyConfig(testConfig())
+        log.off()
     })
 
     test("integration", async () => {

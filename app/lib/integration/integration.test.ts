@@ -57,8 +57,6 @@ describe("Integration test", () => {
     }
 
     beforeAll(async () => {
-        log.off()
-
         const buildRoot = path.resolve(__dirname, "../../test")
         const mqttContainer = await GenericContainer.fromDockerfile(path.resolve(buildRoot, "activemq"))
             .build()
