@@ -2,7 +2,7 @@ import { JEST_INTEGRATION_TIMEOUT } from "../../test/test-utils"
 import { applyConfig } from "../config/config"
 import { log } from "../logger"
 import { getToken } from "./login/login"
-import { fetchDevices, smallMessage } from "./miele"
+import { fetchDevices, ping, smallMessage } from "./miele"
 import { testConfig } from "./miele-testutils"
 
 jest.setTimeout(JEST_INTEGRATION_TIMEOUT)
@@ -37,5 +37,9 @@ describe("miele", () => {
             remainingDurationMinutes: 0,
             state: "UNKNOWN"
         })
+    })
+
+    test("ping", async () => {
+        expect(await ping()).toBeTruthy()
     })
 })

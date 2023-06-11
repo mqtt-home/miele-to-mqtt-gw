@@ -50,3 +50,18 @@ export const smallMessage = (device: MieleDevice) => {
         timeCompleted: formatTime(add(new Date(), remainingDuration))
     }
 }
+
+export const ping = async () => {
+    log.debug("Trying to access Miele endpoint")
+    try {
+        await axios.get(
+            "https://api.mcs3.miele.com/thirdparty/login/"
+        )
+        log.debug("Accessing Miele endpoint success")
+        return true
+    }
+    catch (e) {
+        log.debug("Accessing Miele endpoint failed")
+        return false
+    }
+}
