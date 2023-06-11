@@ -16,7 +16,7 @@ describe("sse-client", () => {
 
     test("integration", async () => {
         const token = await getToken()
-        const { sse, registerDevicesListener } = startSSE(token.access_token)
+        const { sse, registerDevicesListener } = startSSE(token.access_token, () => Promise.resolve())
 
         const devices = await new Promise<MieleDevice[]>((resolve) => {
             registerDevicesListener(devices => {

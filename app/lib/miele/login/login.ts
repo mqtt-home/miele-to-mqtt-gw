@@ -9,7 +9,10 @@ import { fetchToken, Token, TokenResult } from "./token"
 
 let token: Token | undefined
 
-export const setToken = (newToken: Token) => {
+// eslint-disable-next-line camelcase
+export const __TEST_getToken = () => token
+
+export const setToken = (newToken: Token | undefined) => {
     token = newToken
 }
 
