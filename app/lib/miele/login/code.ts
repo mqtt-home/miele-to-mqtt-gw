@@ -1,9 +1,11 @@
 import { ConfigMiele, getAppConfig } from "../../config/config"
 import axios from "axios"
+import { log } from "../../logger"
 
 export const codeUrl = "https://api.mcs3.miele.com/oauth/auth"
 // https://api.mcs3.miele.com/thirdparty/login/?redirect_uri=http://localhost:3000&client_id=76012106-c8c0-4901-8ff4-b3bf32696523&response_type=code&state=login&vgInformationSelector=de-DE
 export const fetchCode = async () => {
+    log.debug("Fetching code")
     const config: ConfigMiele = getAppConfig().miele
     const response = await axios.post(
         codeUrl,
@@ -28,10 +30,13 @@ export const fetchCode = async () => {
     if (!location) {
         throw new Error("Cannot fetch code. Location missing.")
     }
+    log.debug("Code location", location)
+
     const params = new URL(location).searchParams
     const code = params.get("code")
     if (!code) {
         throw new Error("Cannot fetch code. Code missing.")
     }
+    log.debug("Code", code)
     return code
 }

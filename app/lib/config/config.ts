@@ -97,6 +97,9 @@ export const persistToken = (token: ConfigToken) => {
             config.miele.token = token
             fs.writeFileSync(configFile, JSON.stringify(config, null, 2))
         }
+        else {
+            log.debug("Token did not change. Not persisting.")
+        }
     }
     catch (e) {
         log.error("Failed to persist token to config file", configFile, e)

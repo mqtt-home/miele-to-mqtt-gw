@@ -46,6 +46,7 @@ const assertConnection = async () => {
 }
 
 export const login = async (now = new Date()) => {
+    log.debug("Logging in")
     let connected = await assertConnection()
 
     try {

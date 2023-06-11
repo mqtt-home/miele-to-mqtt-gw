@@ -1,9 +1,11 @@
 import Duration from "@icholy/duration"
 import axios from "axios"
+import { log } from "../logger"
 import { add, formatHours, formatTime, parseDuration } from "./duration"
 import { DeviceStatus, MieleDevice, Phase } from "./miele-types"
 
 export const fetchDevices = async (token: string) => {
+    log.debug("Fetching devices")
     const response = await axios.get(
         "https://api.mcs3.miele.com/v1/devices/",
         {
@@ -17,8 +19,10 @@ export const fetchDevices = async (token: string) => {
 }
 
 export const convertDevices = (devices: any) => {
+    log.debug("Converting devices")
     const result: MieleDevice[] = []
     for (const key of Object.keys(devices)) {
+        log.debug("Converting device info", key, devices[key])
         result.push({
             id: key,
             data: devices[key]
