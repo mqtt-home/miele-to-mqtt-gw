@@ -32,6 +32,8 @@ export type ConfigMiele = {
     "polling-interval"?: number
 
     token?: ConfigToken
+
+    "connection-check-interval": number
 }
 
 export type Config = {
@@ -52,7 +54,8 @@ const mqttDefaults = {
 
 const mieleDefaults = {
     mode: "sse",
-    "country-code": "de-DE"
+    "country-code": "de-DE",
+    "connection-check-interval": 10_000
 }
 
 const configDefaults = {
