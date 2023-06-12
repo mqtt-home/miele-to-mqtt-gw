@@ -3,79 +3,85 @@ import { Writable } from "stream"
 import * as winston from "winston"
 import chalk from "chalk"
 
+export class TestLogger {
+    output = ""
+    logger: winston.Logger
+
+    constructor () {
+        process.env.FORCE_COLOR = "0"
+
+        const stream = new Writable()
+        stream._write = (chunk, _, next) => {
+            this.output = this.output += chunk.toString()
+            next()
+        }
+        this.logger = createLogger(new winston.transports.Stream({ stream }))
+        this.logger.level = "TRACE"
+        setLogger(this.logger)
+    }
+}
+
 describe("Log format", () => {
-    let output = ""
-    let logger: winston.Logger
+    let logger: TestLogger
 
     beforeEach(() => {
         log.off()
 
         process.env.FORCE_COLOR = "0"
 
-        const stream = new Writable()
-        stream._write = (chunk, _, next) => {
-            output = output += chunk.toString()
-            next()
-        }
-        logger = createLogger(new winston.transports.Stream({ stream }))
-        logger.level = "TRACE"
-        setLogger(logger)
-    })
-
-    afterEach(() => {
-        output = ""
+        logger = new TestLogger()
     })
 
     describe("severities", () => {
         test("info log", () => {
             log.info("some info")
 
-            expect(output).toMatch(/\d+-\d+-\d+T\d+:\d+:\d+.\d+.* \[.*INFO.*] some info.*/)
+            expect(logger.output).toMatch(/\d+-\d+-\d+T\d+:\d+:\d+.\d+.* \[.*INFO.*] some info.*/)
         })
 
         test("warn log", () => {
             log.warn("some warning")
 
-            expect(output).toMatch(/\d+-\d+-\d+T\d+:\d+:\d+.\d+.* \[.*WARN.*] some warning.*/)
+            expect(logger.output).toMatch(/\d+-\d+-\d+T\d+:\d+:\d+.\d+.* \[.*WARN.*] some warning.*/)
         })
 
         test("error log", () => {
             log.error("some error")
 
-            expect(output).toMatch(/\d+-\d+-\d+T\d+:\d+:\d+.\d+.* \[.*ERROR.*] some error.*/)
+            expect(logger.output).toMatch(/\d+-\d+-\d+T\d+:\d+:\d+.\d+.* \[.*ERROR.*] some error.*/)
         })
 
         test("fatal log", () => {
             log.fatal("some fatal error")
 
-            expect(output).toMatch(/\d+-\d+-\d+T\d+:\d+:\d+.\d+.* \[.*FATAL.*] some fatal error.*/)
+            expect(logger.output).toMatch(/\d+-\d+-\d+T\d+:\d+:\d+.\d+.* \[.*FATAL.*] some fatal error.*/)
         })
 
         test("debug log", () => {
             log.debug("some debug message")
 
-            expect(output).toMatch(/\d+-\d+-\d+T\d+:\d+:\d+.\d+.* \[.*DEBUG.*] some debug message.*/)
+            expect(logger.output).toMatch(/\d+-\d+-\d+T\d+:\d+:\d+.\d+.* \[.*DEBUG.*] some debug message.*/)
         })
 
         test("trace log", () => {
             log.trace("some trace message")
 
-            expect(output).toMatch(/\d+-\d+-\d+T\d+:\d+:\d+.\d+.* \[.*TRACE.*] some trace message.*/)
+            expect(logger.output).toMatch(/\d+-\d+-\d+T\d+:\d+:\d+.\d+.* \[.*TRACE.*] some trace message.*/)
         })
     })
 
     test("Configure log levels", () => {
         log.configure("WARN")
-        expect(logger.level).toBe("WARN")
+        expect(logger.logger.level).toBe("WARN")
         log.configure("TRACE")
-        expect(logger.level).toBe("TRACE")
+        expect(logger.logger.level).toBe("TRACE")
     })
 
     test("error log with Error object", () => {
         log.error("some error", new Error("uups"))
 
-        expect(output).toMatch(/\d+-\d+-\d+T\d+:\d+:\d+.\d+.* \[.*ERROR.*] some error.*/)
-        expect(output).toContain("uups")
+        expect(logger.output).toMatch(/\d+-\d+-\d+T\d+:\d+:\d+.\d+.* \[.*ERROR.*] some error.*/)
+        expect(logger.output).toContain("uups")
     })
 
     test("Log level colors", () => {

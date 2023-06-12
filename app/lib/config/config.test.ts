@@ -55,6 +55,7 @@ describe("Config", () => {
 
     test("load from file", () => {
         loadConfig(path.join(__dirname, "../../../production/config/config-example.json"))
+        log.off()
         expect(getAppConfig().miele.mode).toBe("sse")
     })
 
@@ -74,6 +75,7 @@ describe("Config", () => {
                     }
                 }
             })
+            log.off()
             recoverToken()
             expect(__TEST_getToken()!.access_token).toBe("access_token")
         })
@@ -81,6 +83,7 @@ describe("Config", () => {
         test("cannot recover token", () => {
             applyConfig({
             })
+            log.off()
             recoverToken()
             expect(__TEST_getToken()).toBeFalsy()
         })
@@ -112,6 +115,7 @@ describe("Config", () => {
             }))
 
             loadConfig(config)
+            log.off()
 
             persistToken(token)
 
@@ -137,10 +141,12 @@ describe("Config", () => {
                 },
                 miele: {
                     token
-                }
+                },
+                loglevel: "error"
             }))
 
             loadConfig(config)
+            log.off()
             fs.writeFileSync(config, JSON.stringify({
                 miele: {
                     token

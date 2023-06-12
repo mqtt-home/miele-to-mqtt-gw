@@ -9,6 +9,13 @@ export const unregisterConnectionCheck = () => {
     checkConnection?.unref()
 }
 
+let check = ping
+
+// eslint-disable-next-line camelcase
+export const __TEST_setCheck = (newCheck: () => Promise<boolean>) => {
+    check = newCheck
+}
+
 export const registerConnectionCheck = (restartHook: () => Promise<void>, config = getAppConfig().miele) => {
     const interval = config["connection-check-interval"]
     if (interval === 0) {
@@ -20,7 +27,7 @@ export const registerConnectionCheck = (restartHook: () => Promise<void>, config
     checkConnection = setInterval(async () => {
         log.debug("Checking connection")
 
-        if (!await ping()) {
+        if (!await check()) {
             log.debug("Connection check failed")
             if (!connectionLost) {
                 connectionLost = true
@@ -29,10 +36,12 @@ export const registerConnectionCheck = (restartHook: () => Promise<void>, config
         }
         else if (connectionLost) {
             log.debug("Connection check success after connection was lost")
-            restartHook().then()
+            await restartHook()
         }
         else {
             log.debug("Connection check success")
         }
     }, interval)
+
+    return checkConnection
 }
