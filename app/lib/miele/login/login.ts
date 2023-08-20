@@ -48,6 +48,8 @@ const assertConnection = async () => {
     }
 }
 
+let currentToken: string | undefined
+
 export const login = async (now = new Date()) => {
     log.debug("Logging in")
     let connected = await assertConnection()
@@ -74,8 +76,12 @@ export const login = async (now = new Date()) => {
         validUntil: token.expiresAt.toISOString()
     })
 
+    currentToken = token.access_token
+
     return token
 }
+
+export const getCurrentToken = () => currentToken
 
 export const getToken = async () => {
     if (!token || needsRefresh()) {

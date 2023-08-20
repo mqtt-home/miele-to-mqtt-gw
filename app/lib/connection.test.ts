@@ -33,20 +33,20 @@ describe("connection", () => {
 
         const fn = jest.fn()
 
-        const check = registerConnectionCheck(fn, config)
+        registerConnectionCheck(fn, config)
 
         await sleep(100)
 
         expect(fn).not.toHaveBeenCalled()
 
-        check?.unref()
+        unregisterConnectionCheck()
     })
 
     test("failed", async () => {
         __TEST_setCheck(() => Promise.resolve(false))
         const fn = jest.fn()
 
-        const check = registerConnectionCheck(fn, config)
+        registerConnectionCheck(fn, config)
 
         await sleep(100)
         expect(fn).not.toHaveBeenCalled()
@@ -56,14 +56,14 @@ describe("connection", () => {
         await sleep(100)
         expect(fn).toHaveBeenCalled()
 
-        check?.unref()
+        unregisterConnectionCheck()
     })
 
     test("check disabled", async () => {
         __TEST_setCheck(() => Promise.resolve(false))
         const fn = jest.fn()
 
-        const check = registerConnectionCheck(fn, { ...config, "connection-check-interval": 0 })
+        registerConnectionCheck(fn, { ...config, "connection-check-interval": 0 })
 
         await sleep(100)
         expect(fn).not.toHaveBeenCalled()
@@ -73,6 +73,18 @@ describe("connection", () => {
         await sleep(100)
         expect(fn).not.toHaveBeenCalled()
 
-        check?.unref()
+        unregisterConnectionCheck()
+    })
+
+    test("already registered", async () => {
+        __TEST_setCheck(() => Promise.resolve(false))
+        const fn = jest.fn()
+
+        let check1 = registerConnectionCheck(fn, config)
+        let check2 = registerConnectionCheck(fn, config)
+
+        expect(check1).toBe(check2)
+
+        unregisterConnectionCheck()
     })
 })
