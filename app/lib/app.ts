@@ -13,7 +13,6 @@ export const triggerFullUpdate = async () => {
         log.info("Token refresh required. Reconnecting now.")
         await restart()
     }
-    await polling()
 }
 
 export const polling = async () => {
@@ -72,7 +71,7 @@ export const startApp = async () => {
         const task = cron.schedule("* * * * *", triggerFullUpdate)
         task.start()
 
-        const pollingTask = cron.schedule("* * * * *", triggerFullUpdate)
+        const pollingTask = cron.schedule("* * * * *", polling)
         pollingTask.start()
 
         return () => {
