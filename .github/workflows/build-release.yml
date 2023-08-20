@@ -32,6 +32,11 @@ jobs:
           RELEASE_VERSION: ${{ steps.next.outputs.version }}
         run: npm version $RELEASE_VERSION --allow-same-version
 
+      - name: Setup node
+        uses: actions/setup-node@v3
+        with:
+          node-version: 20.x
+
       - name: Install
         working-directory: app
         shell: bash
