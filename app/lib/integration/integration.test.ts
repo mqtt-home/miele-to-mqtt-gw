@@ -4,6 +4,7 @@ import { GenericContainer, StartedTestContainer, Wait } from "testcontainers"
 import { JEST_INTEGRATION_TIMEOUT, JEST_DEFAULT_TIMEOUT } from "../../test/test-utils"
 import { startApp } from "../app"
 import { applyConfig, ConfigMqtt, getAppConfig } from "../config/config"
+import { unregisterConnectionCheck } from "../connection"
 import { log } from "../logger"
 import { testConfig } from "../miele/miele-testutils"
 import { createMqttInstance, MqttInstance, subscribe } from "../mqtt/mqtt-client"
@@ -93,6 +94,7 @@ describe("Integration test", () => {
         await mqtt?.stop()
         jest.setTimeout(JEST_DEFAULT_TIMEOUT)
         await process.nextTick(() => {})
+        unregisterConnectionCheck()
     })
 
     test("Message is published", async () => {

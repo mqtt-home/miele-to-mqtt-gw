@@ -3,9 +3,12 @@ import axios from "axios"
 import { log } from "../../logger"
 
 export const codeUrl = "https://api.mcs3.miele.com/oauth/auth"
-// https://api.mcs3.miele.com/thirdparty/login/?redirect_uri=http://localhost:3000&client_id=76012106-c8c0-4901-8ff4-b3bf32696523&response_type=code&state=login&vgInformationSelector=de-DE
 export const fetchCode = async () => {
     log.debug("Fetching code")
+
+    // Debug this by visiting the following URL:
+    // https://api.mcs3.miele.com/thirdparty/login/?redirect_uri=/v1/&client_id=<your_client_id>&response_type=code
+    //
     const config: ConfigMiele = getAppConfig().miele
     const response = await axios.post(
         codeUrl,
