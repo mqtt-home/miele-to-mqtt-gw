@@ -80,8 +80,8 @@ describe("connection", () => {
         __TEST_setCheck(() => Promise.resolve(false))
         const fn = jest.fn()
 
-        let check1 = registerConnectionCheck(fn, config)
-        let check2 = registerConnectionCheck(fn, config)
+        const check1 = registerConnectionCheck(fn, config)
+        const check2 = registerConnectionCheck(fn, config)
 
         expect(check1).toBe(check2)
 
