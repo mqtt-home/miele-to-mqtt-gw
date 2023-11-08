@@ -47,7 +47,7 @@
     "dependencies": {
         "@icholy/duration": "5.1.0",
         "async-lock": "1.4.0",
-        "axios": "1.4.0",
+        "axios": "1.6.1",
         "eventsource": "2.0.2",
         "mqtt": "4.3.7",
         "node-cron": "3.0.2",
