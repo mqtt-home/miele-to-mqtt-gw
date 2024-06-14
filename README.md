@@ -55,11 +55,10 @@ See [fullmessage-example](fullmessage-example.md)
   "miele": {
     "client-id": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
     "client-secret": "12345678901234567890123456789012",
-    "polling-interval": 30,
     "username": "miele_at_home_user@example.com",
     "password": "miele_at_home_password",
     "country-code": "de-DE",
-    "mode": "sse"
+    "mode": "polling"
   }
 }
 ```
@@ -99,11 +98,10 @@ Two-letter language/country code. Examples:
 
 Make sure you have write access to the configuration file, so that the token can be persisted.
 
-# Use server-sent events
+# Server-sent events vs polling
 
-Miele provides a server-sent-events API. To enable this, set the `mode`
-property in your configuration to `SSE`. With SSE enabled, you will get faster notifications when some device state
-changes. This is an experimental setting and not enabled by default.
+Miele provides a server-sent-events API. This is always enabled on version 3.x.
+To enable additional polling as fallback (each minute), set the `mode` property in your configuration to `polling`.
 
 # Deduplicate messages
 
