@@ -23,7 +23,7 @@ describe("Config", () => {
                 "connection-check-interval": 10000,
                 "country-code": "de-DE",
                 mode: "sse",
-                persistToken: true,
+                persistToken: true
             },
             mqtt: {
                 "bridge-info": true,

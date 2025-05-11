@@ -1,6 +1,5 @@
 import Duration from "@icholy/duration"
 import axios from "axios"
-import { config } from "winston"
 import { getAppConfig, persistToken } from "../../config/config"
 import { log } from "../../logger"
 import { add } from "../duration"
