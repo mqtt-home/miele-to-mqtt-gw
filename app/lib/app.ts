@@ -62,8 +62,8 @@ const start = async () => {
 
 export const startApp = async () => {
     try {
-        const mqttCleanUp = await connectMqtt()
         await start()
+        const mqttCleanUp = await connectMqtt()
         await triggerFullUpdate()
         log.info("Application is now ready.")
 

@@ -34,6 +34,7 @@ export type ConfigMiele = {
     token?: ConfigToken
 
     "connection-check-interval": number
+    persistToken?: boolean
 }
 
 export type Config = {
@@ -55,7 +56,8 @@ const mqttDefaults = {
 const mieleDefaults = {
     mode: "sse",
     "country-code": "de-DE",
-    "connection-check-interval": 10_000
+    "connection-check-interval": 10_000,
+    persistToken: true
 }
 
 const configDefaults = {

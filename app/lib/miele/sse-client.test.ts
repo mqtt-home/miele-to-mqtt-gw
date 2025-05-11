@@ -24,7 +24,7 @@ describe("sse-client", () => {
             })
         })
 
-        expect(devices.length).toBe(1)
+        expect(devices.length).toBe(2)
 
         sse.close()
     })

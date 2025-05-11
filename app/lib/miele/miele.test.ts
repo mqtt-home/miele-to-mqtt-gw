@@ -20,8 +20,9 @@ describe("miele", () => {
     test("fetch devices", async () => {
         const token = await getToken()
         const devices = await fetchDevices(token.access_token)
-        expect(devices.length).toBe(1)
-        expect(devices[0].data.ident.type.value_localized).toBe("Dishwasher")
+        expect(devices.length).toBe(2)
+        expect(devices[0].data.ident.type.value_localized).toBe("Washing machine")
+        expect(devices[1].data.ident.type.value_localized).toBe("Dishwasher")
 
         const small = smallMessage(devices[0])
         expect(small).toBeDefined()
