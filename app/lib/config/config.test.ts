@@ -22,7 +22,8 @@ describe("Config", () => {
             miele: {
                 "connection-check-interval": 10000,
                 "country-code": "de-DE",
-                mode: "sse"
+                mode: "sse",
+                persistToken: true,
             },
             mqtt: {
                 "bridge-info": true,

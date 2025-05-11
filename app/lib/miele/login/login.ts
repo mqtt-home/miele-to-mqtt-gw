@@ -1,5 +1,6 @@
 import Duration from "@icholy/duration"
 import axios from "axios"
+import { config } from "winston"
 import { getAppConfig, persistToken } from "../../config/config"
 import { log } from "../../logger"
 import { add } from "../duration"
@@ -70,13 +71,17 @@ export const login = async (now = new Date()) => {
         token = convertToken(await fetchToken(code))
     }
 
-    persistToken({
-        access: token.access_token,
-        refresh: token.refresh_token,
-        validUntil: token.expiresAt.toISOString()
-    })
+    if (getAppConfig().miele.persistToken) {
+        persistToken({
+            access: token.access_token,
+            refresh: token.refresh_token,
+            validUntil: token.expiresAt.toISOString()
+        })
+    }
 
     currentToken = token.access_token
+
+    log.info("Login successful")
 
     return token
 }
