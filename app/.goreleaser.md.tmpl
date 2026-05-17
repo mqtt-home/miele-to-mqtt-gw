@@ -1,0 +1,34 @@
+# {{ .Tag }} ({{ .Date }})
+
+This release includes the following changes:
+
+{{- if .Changelog.CommitGroups }}
+{{ range .Changelog.CommitGroups }}
+### {{ .Title }}
+{{ range .Commits }}
+- {{ if .Scope }}**{{ .Scope }}:** {{ end }}{{ .Subject }}
+{{- end }}
+{{ end }}
+{{- else }}
+
+No significant changes were found in the commit history.
+{{- end }}
+
+## Installation
+
+### Docker
+
+```
+docker pull pharndt/mielemqtt:{{ .Tag }}
+```
+
+### Binaries
+
+{{- range .Artifacts }}
+{{ if eq .Type "Binary" }}
+- {{ .Name }} - {{ .Os }}/{{ .Arch }}
+{{- end }}
+{{- end }}
+
+---
+Full Changelog: https://github.com/mqtt-home/miele-to-mqtt-gw/compare/{{ .PreviousTag }}...{{ .Tag }}

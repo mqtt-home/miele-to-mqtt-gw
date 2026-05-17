@@ -1,6 +1,9 @@
 name: Build release
 
 on:
+  push:
+    tags:
+      - 'v*'
   workflow_dispatch:
     inputs:
       releaseType:
@@ -11,74 +14,65 @@ on:
           - patch
           - minor
           - major
+      releaseNotes:
+        description: Custom release notes (optional)
+        required: false
+        type: string
+
+permissions:
+  contents: write
 
 jobs:
-  build:
+  goreleaser:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - uses: philipparndt/get-release-number@v3
         id: next
+        if: github.event_name == 'workflow_dispatch'
         with:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           releaseType: ${{ github.event.inputs.releaseType }}
 
+      - name: Create tag if workflow_dispatch
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git tag -a v${{ steps.next.outputs.version }} -m "Release v${{ steps.next.outputs.version }}"
+          git push origin v${{ steps.next.outputs.version }}
+
       - name: Set up Go
-        uses: actions/setup-go@v6
+        uses: actions/setup-go@v5
         with:
           go-version: '1.26'
-
-      - name: Test
-        working-directory: app
-        run: go test ./...
-
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v4
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v4
+          check-latest: true
 
       - name: Login to DockerHub
-        uses: docker/login-action@v4
+        uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Build docker container and push
-        id: docker_build
-        uses: docker/build-push-action@v7
-        env:
-          RELEASE_VERSION: ${{ steps.next.outputs.version }}
-        with:
-          context: ./app
-          file: ./app/Dockerfile
-          platforms: linux/amd64,linux/arm/v7,linux/arm64
-          push: true
-          build-args: |
-            VERSION=${{ steps.next.outputs.version }}
-            GIT_COMMIT=${{ github.sha }}
-          tags: |
-            pharndt/mielemqtt:latest
-            pharndt/mielemqtt:${{env.RELEASE_VERSION}}
+      - name: Generate Changelog
+        id: changelog
+        if: github.event.inputs.releaseNotes != ''
+        run: |
+          echo "${{ github.event.inputs.releaseNotes }}" > ./app/RELEASE_NOTES.md
+          echo "CUSTOM_RELEASE_NOTES=true" >> $GITHUB_ENV
 
-      - name: Create Release
-        id: create_release
-        uses: ncipollo/release-action@v1
+      - name: Run GoReleaser
+        uses: goreleaser/goreleaser-action@v6
+        with:
+          distribution: goreleaser
+          version: v2
+          args: release --clean ${{ env.CUSTOM_RELEASE_NOTES == 'true' && '--release-notes=./RELEASE_NOTES.md' || '' }}
+          workdir: ./app
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          RELEASE_VERSION: ${{ steps.next.outputs.version }}
-        with:
-          tag: ${{env.RELEASE_VERSION}}
-          name: ${{env.RELEASE_VERSION}}
-          body: |
-            Docker tag: `pharndt/mielemqtt:${{env.RELEASE_VERSION}}`
-
-            Changes in this Release
-              - Go rewrite
-              - ...
-
-          draft: false
-          prerelease: false
+          DOCKER_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          DOCKER_PASSWORD: ${{ secrets.DOCKERHUB_TOKEN }}

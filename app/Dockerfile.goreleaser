@@ -1,0 +1,14 @@
+# syntax=docker/dockerfile:1.24
+
+# Final stage - only for the binary
+FROM gcr.io/distroless/static:nonroot
+
+WORKDIR /
+
+# Copy the pre-built binary from GoReleaser
+COPY miele2mqtt /miele2mqtt
+
+# Use non-root user (distroless already provides this)
+USER nonroot:nonroot
+
+ENTRYPOINT ["/miele2mqtt", "/var/lib/miele-to-mqtt-gw/config.json"]

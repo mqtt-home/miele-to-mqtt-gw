@@ -1,0 +1,7 @@
+FROM scratch
+
+COPY miele2mqtt /miele2mqtt
+
+USER 65534:65534
+
+ENTRYPOINT ["/miele2mqtt", "/var/lib/miele-to-mqtt-gw/config.json"]

@@ -1,0 +1,92 @@
+project_name: miele2mqtt
+version: 2
+
+before:
+  hooks:
+    - go mod tidy
+
+builds:
+  - id: miele2mqtt
+    main: ./main.go
+    binary: miele2mqtt
+    goos:
+      - linux
+    goarch:
+      - amd64
+      - arm64
+      - arm
+    goarm:
+      - "6"
+      - "7"
+    env:
+      - CGO_ENABLED=0
+    ldflags:
+      - -s -w -X github.com/mqtt-home/miele-to-mqtt-gw/version.Version={{.Version}} -X github.com/mqtt-home/miele-to-mqtt-gw/version.GitCommit={{.Commit}} -X github.com/mqtt-home/miele-to-mqtt-gw/version.BuildTime={{.Date}}
+
+dockers:
+  - image_templates:
+      - "pharndt/mielemqtt:{{ .Tag }}-amd64"
+    dockerfile: Dockerfile.goreleaser
+    use: buildx
+    goos: linux
+    goarch: amd64
+    build_flag_templates:
+      - "--platform=linux/amd64"
+    skip_push: false
+
+  - image_templates:
+      - "pharndt/mielemqtt:{{ .Tag }}-arm64"
+    dockerfile: Dockerfile.goreleaser
+    use: buildx
+    goos: linux
+    goarch: arm64
+    build_flag_templates:
+      - "--platform=linux/arm64"
+    skip_push: false
+
+  - image_templates:
+      - "pharndt/mielemqtt:{{ .Tag }}-armv6"
+    dockerfile: Dockerfile.goreleaser-arm
+    use: buildx
+    goos: linux
+    goarch: arm
+    goarm: "6"
+    build_flag_templates:
+      - "--platform=linux/arm/v6"
+    skip_push: false
+
+  - image_templates:
+      - "pharndt/mielemqtt:{{ .Tag }}-armv7"
+    dockerfile: Dockerfile.goreleaser-arm
+    use: buildx
+    goos: linux
+    goarch: arm
+    goarm: "7"
+    build_flag_templates:
+      - "--platform=linux/arm/v7"
+    skip_push: false
+
+docker_manifests:
+  - id: tag
+    name_template: "pharndt/mielemqtt:{{ .Tag }}"
+    image_templates:
+      - pharndt/mielemqtt:{{ .Tag }}-amd64
+      - pharndt/mielemqtt:{{ .Tag }}-arm64
+      - pharndt/mielemqtt:{{ .Tag }}-armv6
+      - pharndt/mielemqtt:{{ .Tag }}-armv7
+
+  - id: latest
+    name_template: "pharndt/mielemqtt:latest"
+    image_templates:
+      - pharndt/mielemqtt:{{ .Tag }}-amd64
+      - pharndt/mielemqtt:{{ .Tag }}-arm64
+      - pharndt/mielemqtt:{{ .Tag }}-armv6
+      - pharndt/mielemqtt:{{ .Tag }}-armv7
+
+release:
+  disable: false
+  mode: replace
+  draft: false
+  prerelease: auto
+  make_latest: true
+  skip_upload: true
