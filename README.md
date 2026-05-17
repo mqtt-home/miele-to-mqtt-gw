@@ -8,12 +8,13 @@ This application will post two MQTT messages for each connected device: one shor
 
 # Releases
 
-## Production (2.x)
-The current production version is 2.x and is implemented in Java.
-See https://github.com/mqtt-home/miele-to-mqtt-gw/tree/2.x-java
+## Production (4.x)
+The current production version is 4.x and is implemented in Go. It produces a
+single static binary distributed as a distroless container image.
 
-## Prerelease (3.x)
-The prerelease is version 3.x and implemented in TypeScript.
+## Legacy releases
+- 3.x — TypeScript / Node.js (https://github.com/mqtt-home/miele-to-mqtt-gw/tree/3.x-node)
+- 2.x — Java (https://github.com/mqtt-home/miele-to-mqtt-gw/tree/2.x-java)
 
 ## Example short message
 
@@ -162,39 +163,88 @@ Valid log levels are:
 
 Not all levels are currently used.
 
+# Diagnostics
+
+The bridge exposes a small diagnostic HTTP listener on `:6060`:
+
+- `/debug/vars` — Go `expvar` snapshot. Includes a `miele` object alongside the
+  shared `mqtt` object:
+
+  ```json
+  {
+    "miele": {
+      "connection": "connected",
+      "devices": {
+        "000123456789": {
+          "phase": "DRYING", "phaseId": 1799, "state": "RUNNING",
+          "remainingDuration": "0:04", "remainingDurationMinutes": 4,
+          "timeCompleted": "12:35"
+        }
+      },
+      "sse":     { "last_event": "...", "events_total": 1234 },
+      "polling": { "last_attempt": "...", "last_success": "...", "last_error": "", "success_total": 23, "error_total": 0 },
+      "token":   { "expires_at": "...", "last_refresh": "...", "refresh_total": 5 }
+    }
+  }
+  ```
+
+  Tail a single field with `curl -s http://localhost:6060/debug/vars | jq .miele.sse`.
+
+- `/debug/pprof/*` — standard Go pprof endpoints (goroutines, heap, CPU, …).
+
+`:6060` is intended to be reachable from a trusted network only — do not
+expose it to the public internet. The container does not bind a public port
+by default; use SSH port-forwarding or a private overlay network when you
+need to inspect it from another host.
+
 # build
 
-## GitHub access token
+The bridge is a Go application. The repository ships a `Makefile` and a
+multi-stage `Dockerfile` (distroless final stage).
 
-Make sure you have a GitHub access token in your `~/.m2/settings.xml`
-```xml
-<servers>
-  <server>
-    <id>github</id>
-    <username>your username</username>
-    <password>your access token</password>
-  </server>
-</servers>
+## Local build
+
+The Go module lives under `app/`. Run the Make targets from there:
+
+```
+cd app
+make build              # produces ./app/build/miele2mqtt
+make test               # go test ./...
+make vet                # go vet ./...
+make run                # build then run against production/config/config.json
 ```
 
-See https://docs.github.com/en/packages/guides/configuring-apache-maven-for-use-with-github-packages
+The binary takes the config-file path as its single argument:
 
-## Test cases against real Miele API
+```
+./app/build/miele2mqtt /path/to/config.json
+```
 
-To execute test cases against the real Miele API, you need to set some environment variables.
+## Docker image
 
-| Name                | Value               |
-| ------------------- | ------------------- |
-| MIELE_CLIENT_ID     | your client id      |
-| MIELE_CLIENT_SECRET | your client secret  |
-| MIELE_USERNAME      | your Miele username |
-| MIELE_PASSWORD      | your Miele password |
+```
+cd app
+make image              # builds pharndt/mielemqtt:latest
+```
 
-This is necessary to verify the login method is still working, and the API has not been changed incompatible.
+The image is based on `gcr.io/distroless/static:nonroot`. Mount the config at
+`/var/lib/miele-to-mqtt-gw/config.json` (matches the existing
+`production/docker-compose.yaml`).
 
-## Build container
+## Environment-variable substitution in the config
 
-Build the docker container using `build.sh`.
+`${NAME}` placeholders in `config.json` are replaced with the value of the
+`NAME` environment variable before parsing; missing variables become empty
+strings. Example:
+
+```json
+{
+  "miele": {
+    "username": "${MIELE_USERNAME}",
+    "password": "${MIELE_PASSWORD}"
+  }
+}
+```
 
 ## openHAB configuration
 

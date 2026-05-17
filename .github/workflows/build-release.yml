@@ -18,7 +18,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - uses: philipparndt/get-release-number@v2
         id: next
@@ -26,49 +26,40 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           releaseType: ${{ github.event.inputs.releaseType }}
 
-      - name: Update version
-        working-directory: app
-        env:
-          RELEASE_VERSION: ${{ steps.next.outputs.version }}
-        run: npm version $RELEASE_VERSION --allow-same-version
-
-      - name: Setup node
-        uses: actions/setup-node@v3
+      - name: Set up Go
+        uses: actions/setup-go@v5
         with:
-          node-version: 20.x
+          go-version: '1.25'
 
-      - name: Install
+      - name: Test
         working-directory: app
-        shell: bash
-        run: npm install
-
-      - name: Build
-        working-directory: app
-        shell: bash
-        run: npm run build
+        run: go test ./...
 
       - name: Set up QEMU
-        uses: docker/setup-qemu-action@v2
+        uses: docker/setup-qemu-action@v3
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
+        uses: docker/setup-buildx-action@v3
 
       - name: Login to DockerHub
-        uses: docker/login-action@v2
+        uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Build docker container and push
         id: docker_build
-        uses: docker/build-push-action@v4
+        uses: docker/build-push-action@v6
         env:
           RELEASE_VERSION: ${{ steps.next.outputs.version }}
         with:
-          context: .
-          file: ./Dockerfile
-          platforms: linux/amd64,linux/arm/v6,linux/arm/v7,linux/arm64
+          context: ./app
+          file: ./app/Dockerfile
+          platforms: linux/amd64,linux/arm/v7,linux/arm64
           push: true
+          build-args: |
+            VERSION=${{ steps.next.outputs.version }}
+            GIT_COMMIT=${{ github.sha }}
           tags: |
             pharndt/mielemqtt:latest
             pharndt/mielemqtt:${{env.RELEASE_VERSION}}
@@ -86,7 +77,7 @@ jobs:
             Docker tag: `pharndt/mielemqtt:${{env.RELEASE_VERSION}}`
 
             Changes in this Release
-              - Dependency update
+              - Go rewrite
               - ...
 
           draft: false
