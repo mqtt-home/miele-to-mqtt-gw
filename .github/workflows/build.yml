@@ -10,23 +10,19 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
-      - name: Setup node
-        uses: actions/setup-node@v3
+      - uses: actions/setup-go@v5
         with:
-          node-version: 20.x
+          go-version: '1.25'
 
-      - name: Install
+      - name: Vet
         working-directory: app
-        run: |
-          npm install
+        run: go vet ./...
 
-      - name: Lint/Test
+      - name: Test
         working-directory: app
-        run: |
-          npm run lint
-          # npm test
+        run: go test -v ./...
         env:
           MIELE_CLIENT_ID: ${{ secrets.MIELE_CLIENT_ID }}
           MIELE_CLIENT_SECRET: ${{ secrets.MIELE_CLIENT_SECRET }}
@@ -35,8 +31,14 @@ jobs:
 
       - name: Build
         working-directory: app
-        run: |
-          npm run build
+        run: go build ./...
 
-      - name: Build container
-        run: docker compose build
+      - name: Build docker container
+        uses: docker/build-push-action@v6
+        with:
+          context: ./app
+          file: ./app/Dockerfile
+          platforms: linux/amd64
+          push: false
+          tags: |
+            pharndt/mielemqtt:latest

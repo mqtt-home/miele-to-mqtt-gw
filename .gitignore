@@ -21,3 +21,11 @@ config-auth.json
 
 .idea
 *.iml
+
+# Go
+app/build/
+app/bin/
+app/coverage.out
+app/coverage.html
+*.test
+*.prof
