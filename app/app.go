@@ -49,10 +49,14 @@ func (a *app) start(ctx context.Context) {
 	a.mgr.SetOnRefresh(metrics.RecordTokenRefresh)
 
 	if a.cfg.Miele.Mode == "sse" {
+		backoff := a.cfg.Miele.SSEBackoff
 		a.sse = sse.Start(sse.Options{
-			AccessToken: a.mgr.CurrentAccessToken,
-			OnDevices:   a.onDevices,
-			OnEvent:     metrics.RecordSSEEvent,
+			AccessToken:      a.mgr.CurrentAccessToken,
+			OnDevices:        a.onDevices,
+			OnEvent:          metrics.RecordSSEEvent,
+			OnPollingHealthy: pollingHealthy,
+			OnFailure:        metrics.RecordSSEFailure,
+			OnSuccess:        metrics.RecordSSESuccess,
 			OnStatus: func(s string) {
 				switch s {
 				case "connected":
@@ -61,9 +65,14 @@ func (a *app) start(ctx context.Context) {
 				case "disconnected":
 					metrics.SetSSEConnection("disconnected")
 					a.pub.PublishMieleState("disconnected")
+				case "degraded":
+					metrics.SetSSEConnection("degraded")
+					a.pub.PublishMieleState("degraded")
 				}
 			},
-			ReconnectDelay: 5 * time.Second,
+			BaseReconnectDelay: backoff.BaseDelayDuration(),
+			MaxReconnectDelay:  backoff.MaxDelayDuration(),
+			FailureThreshold:   backoff.FailureThreshold,
 		})
 	} else {
 		logger.Info("SSE disabled; running in polling-only mode")
@@ -170,6 +179,14 @@ func (a *app) maybeRefresh(ctx context.Context) {
 	if _, err := a.mgr.Login(ctx); err != nil {
 		logger.Error("Re-login failed", "error", err)
 	}
+}
+
+// pollingHealthy reports whether the polling loop has had at least one
+// successful poll since process start. The SSE client uses this to decide
+// whether a sustained failure streak should surface as `degraded` (polling
+// is filling in) or stay on `disconnected` (nothing is working).
+func pollingHealthy() bool {
+	return metrics.PollSuccessTotal() > 0
 }
 
 // stop tears down all background loops.

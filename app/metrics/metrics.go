@@ -27,8 +27,10 @@ type state struct {
 
 	devices map[string]transform.SmallMessage
 
-	sseLastEvent     time.Time
-	sseEventsTotal   atomic.Int64
+	sseLastEvent            time.Time
+	sseEventsTotal          atomic.Int64
+	sseConsecutiveFailures  int
+	sseNextRetryAt          time.Time
 
 	pollLastAttempt  time.Time
 	pollLastSuccess  time.Time
@@ -66,12 +68,19 @@ func snapshot() any {
 		devicesCopy[k] = v
 	}
 
+	nextRetry := ""
+	if !s.sseNextRetryAt.IsZero() {
+		nextRetry = s.sseNextRetryAt.Format(time.RFC3339)
+	}
+
 	return map[string]any{
 		"connection": s.connection,
 		"devices":    devicesCopy,
 		"sse": map[string]any{
-			"last_event":   s.sseLastEvent,
-			"events_total": s.sseEventsTotal.Load(),
+			"last_event":           s.sseLastEvent,
+			"events_total":         s.sseEventsTotal.Load(),
+			"consecutive_failures": s.sseConsecutiveFailures,
+			"next_retry_after":     nextRetry,
 		},
 		"polling": map[string]any{
 			"last_attempt":  s.pollLastAttempt,
@@ -102,6 +111,30 @@ func RecordSSEEvent(now time.Time) {
 	s.sseLastEvent = now
 	s.mu.Unlock()
 	s.sseEventsTotal.Add(1)
+}
+
+// RecordSSEFailure records the current consecutive-failure streak and the
+// time of the next scheduled reconnect attempt.
+func RecordSSEFailure(streak int, nextRetry time.Time) {
+	s.mu.Lock()
+	s.sseConsecutiveFailures = streak
+	s.sseNextRetryAt = nextRetry
+	s.mu.Unlock()
+}
+
+// RecordSSESuccess resets the SSE failure-streak metrics after a successful
+// event dispatch.
+func RecordSSESuccess() {
+	s.mu.Lock()
+	s.sseConsecutiveFailures = 0
+	s.sseNextRetryAt = time.Time{}
+	s.mu.Unlock()
+}
+
+// PollSuccessTotal returns the cumulative number of successful poll cycles.
+// Used by the app to decide whether polling is "healthy" for status reporting.
+func PollSuccessTotal() int64 {
+	return s.pollSuccessTotal.Load()
 }
 
 // RecordDevice replaces the snapshot for a single device id.

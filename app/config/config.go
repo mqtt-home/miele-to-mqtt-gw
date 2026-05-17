@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"sync"
+	"time"
 
 	"github.com/philipparndt/go-logger"
 	gwconfig "github.com/philipparndt/mqtt-gateway/config"
@@ -42,16 +43,55 @@ type TokenConfig struct {
 }
 
 type MieleConfig struct {
-	ClientID                string       `json:"client-id"`
-	ClientSecret            string       `json:"client-secret"`
-	CountryCode             string       `json:"country-code,omitempty"`
-	Username                string       `json:"username,omitempty"`
-	Password                string       `json:"password,omitempty"`
-	Mode                    string       `json:"mode,omitempty"`
-	PollingInterval         int          `json:"polling-interval,omitempty"`
-	Token                   *TokenConfig `json:"token,omitempty"`
-	ConnectionCheckInterval int          `json:"connection-check-interval,omitempty"`
-	PersistToken            bool         `json:"persistToken"`
+	ClientID                string             `json:"client-id"`
+	ClientSecret            string             `json:"client-secret"`
+	CountryCode             string             `json:"country-code,omitempty"`
+	Username                string             `json:"username,omitempty"`
+	Password                string             `json:"password,omitempty"`
+	Mode                    string             `json:"mode,omitempty"`
+	PollingInterval         int                `json:"polling-interval,omitempty"`
+	Token                   *TokenConfig       `json:"token,omitempty"`
+	ConnectionCheckInterval int                `json:"connection-check-interval,omitempty"`
+	PersistToken            bool               `json:"persistToken"`
+	SSEBackoff              *SSEBackoffConfig  `json:"sse-backoff,omitempty"`
+}
+
+// SSEBackoffConfig tunes the exponential reconnect behavior of the SSE client.
+// All fields are optional; defaults are applied by ApplyDefaults.
+type SSEBackoffConfig struct {
+	FailureThreshold int    `json:"failure-threshold,omitempty"`
+	BaseDelay        string `json:"base-delay,omitempty"`
+	MaxDelay         string `json:"max-delay,omitempty"`
+
+	// Parsed durations. Populated by LoadConfig after JSON unmarshalling.
+	// Not part of the JSON schema.
+	baseDelayParsed time.Duration
+	maxDelayParsed  time.Duration
+}
+
+// BaseDelayDuration returns the parsed base-delay. Falls back to a re-parse if
+// the value was set programmatically without going through LoadConfig.
+func (c *SSEBackoffConfig) BaseDelayDuration() time.Duration {
+	if c == nil {
+		return 0
+	}
+	if c.baseDelayParsed > 0 {
+		return c.baseDelayParsed
+	}
+	d, _ := time.ParseDuration(c.BaseDelay)
+	return d
+}
+
+// MaxDelayDuration returns the parsed max-delay. See BaseDelayDuration.
+func (c *SSEBackoffConfig) MaxDelayDuration() time.Duration {
+	if c == nil {
+		return 0
+	}
+	if c.maxDelayParsed > 0 {
+		return c.maxDelayParsed
+	}
+	d, _ := time.ParseDuration(c.MaxDelay)
+	return d
 }
 
 type Config struct {
@@ -102,6 +142,38 @@ func ApplyDefaults(c *Config) {
 	if c.Names == nil {
 		c.Names = make(map[string]string)
 	}
+	if c.Miele.SSEBackoff == nil {
+		c.Miele.SSEBackoff = &SSEBackoffConfig{}
+	}
+	if c.Miele.SSEBackoff.FailureThreshold <= 0 {
+		c.Miele.SSEBackoff.FailureThreshold = 5
+	}
+	if c.Miele.SSEBackoff.BaseDelay == "" {
+		c.Miele.SSEBackoff.BaseDelay = "5s"
+	}
+	if c.Miele.SSEBackoff.MaxDelay == "" {
+		c.Miele.SSEBackoff.MaxDelay = "10m"
+	}
+}
+
+// parseSSEBackoff parses BaseDelay / MaxDelay into time.Duration values and
+// stores them on the SSEBackoffConfig. Returns a wrapped error naming the
+// offending field if either string fails to parse.
+func parseSSEBackoff(b *SSEBackoffConfig) error {
+	if b == nil {
+		return nil
+	}
+	base, err := time.ParseDuration(b.BaseDelay)
+	if err != nil {
+		return fmt.Errorf("miele.sse-backoff.base-delay: %w", err)
+	}
+	max, err := time.ParseDuration(b.MaxDelay)
+	if err != nil {
+		return fmt.Errorf("miele.sse-backoff.max-delay: %w", err)
+	}
+	b.baseDelayParsed = base
+	b.maxDelayParsed = max
+	return nil
 }
 
 // ReplaceEnvVariables substitutes ${NAME} in raw bytes from environment
@@ -140,6 +212,10 @@ func LoadConfig(path string) (Config, error) {
 	}
 
 	ApplyDefaults(&c)
+
+	if err := parseSSEBackoff(c.Miele.SSEBackoff); err != nil {
+		return Config{}, fmt.Errorf("parse config %s: %w", path, err)
+	}
 
 	mu.Lock()
 	cfg = c

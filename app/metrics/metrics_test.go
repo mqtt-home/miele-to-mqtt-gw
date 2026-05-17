@@ -44,6 +44,12 @@ func TestSnapshot_DefaultShape(t *testing.T) {
 	if v, _ := sseSection["events_total"].(int64); v != 0 {
 		t.Errorf("events_total = %v, want 0", sseSection["events_total"])
 	}
+	if v, _ := sseSection["consecutive_failures"].(int); v != 0 {
+		t.Errorf("consecutive_failures = %v, want 0", sseSection["consecutive_failures"])
+	}
+	if v, _ := sseSection["next_retry_after"].(string); v != "" {
+		t.Errorf("next_retry_after = %q, want empty", v)
+	}
 
 	pollingSection := snap["polling"].(map[string]any)
 	if v, _ := pollingSection["success_total"].(int64); v != 0 {
@@ -86,6 +92,32 @@ func TestRecordSSEEvent(t *testing.T) {
 	}
 	if !sse["last_event"].(time.Time).Equal(now.Add(time.Minute)) {
 		t.Errorf("last_event = %v, want %v", sse["last_event"], now.Add(time.Minute))
+	}
+}
+
+func TestRecordSSEFailureAndSuccess(t *testing.T) {
+	resetState()
+	retry := time.Date(2026, 1, 2, 12, 0, 30, 0, time.UTC)
+
+	RecordSSEFailure(1, retry)
+	RecordSSEFailure(2, retry.Add(time.Second))
+	RecordSSEFailure(3, retry.Add(2*time.Second))
+
+	sse := snapshot().(map[string]any)["sse"].(map[string]any)
+	if sse["consecutive_failures"].(int) != 3 {
+		t.Errorf("consecutive_failures = %v, want 3", sse["consecutive_failures"])
+	}
+	if sse["next_retry_after"].(string) == "" {
+		t.Error("next_retry_after should be set after failures")
+	}
+
+	RecordSSESuccess()
+	sse = snapshot().(map[string]any)["sse"].(map[string]any)
+	if sse["consecutive_failures"].(int) != 0 {
+		t.Errorf("consecutive_failures should reset to 0 on success, got %v", sse["consecutive_failures"])
+	}
+	if sse["next_retry_after"].(string) != "" {
+		t.Errorf("next_retry_after should be empty on success, got %v", sse["next_retry_after"])
 	}
 }
 

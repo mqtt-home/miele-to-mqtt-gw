@@ -12,7 +12,12 @@
         "client-id": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
         "client-secret": "12345678901234567890123456789012",
         "username": "miele_at_home_user@example.com",
-        "password": "miele_at_home_password"
+        "password": "miele_at_home_password",
+        "sse-backoff": {
+            "failure-threshold": 5,
+            "base-delay": "5s",
+            "max-delay": "10m"
+        }
     },
     "timezone": "GMT+1"
 }
