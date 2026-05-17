@@ -123,11 +123,35 @@ The bridge maintains two status topics:
 
 ## Topic: `.../bridge/miele`
 
-| Value          | Description                |
-| -------------- | -------------------------- |
-| `unknown`      | Unknown connection status  |
-| `connected`    | Miele API is connected     |
-| `disconnected` | Miele API is not connected |
+| Value          | Description                                                                       |
+| -------------- | --------------------------------------------------------------------------------- |
+| `unknown`      | Unknown connection status (initial value)                                         |
+| `connected`    | Miele API is connected (SSE healthy)                                              |
+| `disconnected` | Miele API is not connected (brief failure below backoff threshold)                |
+| `degraded`     | SSE has been failing but polling is still delivering device updates               |
+
+### SSE failure backoff
+
+In `mode: "sse"` the bridge always runs the polling loop alongside SSE as a
+fallback. After several consecutive SSE failures (e.g. the upstream returning
+`504 Gateway Time-out`) the reconnect delay is increased exponentially and the
+bridge reports `degraded` on `bridge/miele` to signal that polling is carrying
+device updates. The defaults are tunable in the config:
+
+```json
+{
+  "miele": {
+    "sse-backoff": {
+      "failure-threshold": 5,
+      "base-delay": "5s",
+      "max-delay": "10m"
+    }
+  }
+}
+```
+
+The `sse-backoff` block is optional. With it omitted, the defaults shown above
+apply.
 
 # run
 
@@ -181,7 +205,7 @@ The bridge exposes a small diagnostic HTTP listener on `:6060`:
           "timeCompleted": "12:35"
         }
       },
-      "sse":     { "last_event": "...", "events_total": 1234 },
+      "sse":     { "last_event": "...", "events_total": 1234, "consecutive_failures": 0, "next_retry_after": "" },
       "polling": { "last_attempt": "...", "last_success": "...", "last_error": "", "success_total": 23, "error_total": 0 },
       "token":   { "expires_at": "...", "last_refresh": "...", "refresh_total": 5 }
     }
@@ -189,6 +213,9 @@ The bridge exposes a small diagnostic HTTP listener on `:6060`:
   ```
 
   Tail a single field with `curl -s http://localhost:6060/debug/vars | jq .miele.sse`.
+  `sse.consecutive_failures` and `sse.next_retry_after` reflect the
+  exponential-backoff state when the upstream is degraded — see
+  [Bridge status](#bridge-status).
 
 - `/debug/pprof/*` — standard Go pprof endpoints (goroutines, heap, CPU, …).
 

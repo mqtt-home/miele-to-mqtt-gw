@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestReplaceEnvVariables(t *testing.T) {
@@ -208,6 +209,100 @@ func TestBridgeInfoTopic_Override(t *testing.T) {
 	c := Config{MQTT: MQTTConfig{Topic: "home/miele", BridgeInfoTopic: "custom/topic"}}
 	if got := c.BridgeInfoTopic(); got != "custom/topic" {
 		t.Errorf("BridgeInfoTopic = %q, want custom/topic", got)
+	}
+}
+
+func TestLoadConfig_SSEBackoffDefaults(t *testing.T) {
+	tmp := t.TempDir()
+	p := filepath.Join(tmp, "config.json")
+	body := `{"mqtt": {"url": "tcp://localhost:1883", "topic": "miele"}}`
+	if err := os.WriteFile(p, []byte(body), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	c, err := LoadConfig(p)
+	if err != nil {
+		t.Fatalf("LoadConfig: %v", err)
+	}
+	b := c.Miele.SSEBackoff
+	if b == nil {
+		t.Fatal("SSEBackoff should be populated with defaults")
+	}
+	if b.FailureThreshold != 5 {
+		t.Errorf("FailureThreshold = %d, want 5", b.FailureThreshold)
+	}
+	if b.BaseDelayDuration() != 5*time.Second {
+		t.Errorf("BaseDelay = %v, want 5s", b.BaseDelayDuration())
+	}
+	if b.MaxDelayDuration() != 10*time.Minute {
+		t.Errorf("MaxDelay = %v, want 10m", b.MaxDelayDuration())
+	}
+}
+
+func TestLoadConfig_SSEBackoffPartialOverride(t *testing.T) {
+	tmp := t.TempDir()
+	p := filepath.Join(tmp, "config.json")
+	body := `{
+        "mqtt": {"url": "tcp://localhost:1883", "topic": "miele"},
+        "miele": {"sse-backoff": {"failure-threshold": 10}}
+    }`
+	if err := os.WriteFile(p, []byte(body), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	c, err := LoadConfig(p)
+	if err != nil {
+		t.Fatalf("LoadConfig: %v", err)
+	}
+	b := c.Miele.SSEBackoff
+	if b.FailureThreshold != 10 {
+		t.Errorf("FailureThreshold = %d, want 10", b.FailureThreshold)
+	}
+	if b.BaseDelayDuration() != 5*time.Second {
+		t.Errorf("BaseDelay = %v, want default 5s", b.BaseDelayDuration())
+	}
+	if b.MaxDelayDuration() != 10*time.Minute {
+		t.Errorf("MaxDelay = %v, want default 10m", b.MaxDelayDuration())
+	}
+}
+
+func TestLoadConfig_SSEBackoffCustomDurations(t *testing.T) {
+	tmp := t.TempDir()
+	p := filepath.Join(tmp, "config.json")
+	body := `{
+        "mqtt": {"url": "tcp://localhost:1883", "topic": "miele"},
+        "miele": {"sse-backoff": {"base-delay": "2s", "max-delay": "5m"}}
+    }`
+	if err := os.WriteFile(p, []byte(body), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	c, err := LoadConfig(p)
+	if err != nil {
+		t.Fatalf("LoadConfig: %v", err)
+	}
+	b := c.Miele.SSEBackoff
+	if b.BaseDelayDuration() != 2*time.Second {
+		t.Errorf("BaseDelay = %v, want 2s", b.BaseDelayDuration())
+	}
+	if b.MaxDelayDuration() != 5*time.Minute {
+		t.Errorf("MaxDelay = %v, want 5m", b.MaxDelayDuration())
+	}
+}
+
+func TestLoadConfig_SSEBackoffInvalidDuration(t *testing.T) {
+	tmp := t.TempDir()
+	p := filepath.Join(tmp, "config.json")
+	body := `{
+        "mqtt": {"url": "tcp://localhost:1883", "topic": "miele"},
+        "miele": {"sse-backoff": {"base-delay": "five seconds"}}
+    }`
+	if err := os.WriteFile(p, []byte(body), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	_, err := LoadConfig(p)
+	if err == nil {
+		t.Fatal("expected error for invalid duration")
+	}
+	if !strings.Contains(err.Error(), "base-delay") {
+		t.Errorf("error should name the offending field, got: %v", err)
 	}
 }
 
