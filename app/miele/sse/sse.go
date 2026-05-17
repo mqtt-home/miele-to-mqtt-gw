@@ -28,6 +28,9 @@ type Options struct {
 	// OnDevices is invoked with the device set parsed from each `devices`
 	// event payload.
 	OnDevices func(devices []api.Device)
+	// OnEvent fires once per successfully-dispatched event with the time of
+	// dispatch. Used by metrics; may be nil.
+	OnEvent func(now time.Time)
 	// OnStatus is invoked with `connected` after the body opens and
 	// `disconnected` whenever a stream ends. May be nil.
 	OnStatus func(state string)
@@ -204,6 +207,9 @@ func (c *Client) readLoop(resp *http.Response) {
 		devs := make([]api.Device, 0, len(raw))
 		for id, payload := range raw {
 			devs = append(devs, api.Device{ID: id, Data: payload})
+		}
+		if c.opts.OnEvent != nil {
+			c.opts.OnEvent(time.Now())
 		}
 		if c.opts.OnDevices != nil {
 			c.opts.OnDevices(devs)

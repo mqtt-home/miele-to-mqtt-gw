@@ -10,6 +10,7 @@ import (
 	"syscall"
 
 	"github.com/mqtt-home/miele-to-mqtt-gw/config"
+	"github.com/mqtt-home/miele-to-mqtt-gw/metrics"
 	"github.com/mqtt-home/miele-to-mqtt-gw/miele/login"
 	"github.com/mqtt-home/miele-to-mqtt-gw/version"
 	"github.com/philipparndt/go-logger"
@@ -33,6 +34,7 @@ func initPprof() {
 
 func main() {
 	logger.Init("info", logger.Logger())
+	metrics.Init()
 	logger.Info("miele-to-mqtt-gw",
 		"version", version.Version,
 		"commit", version.GitCommit,

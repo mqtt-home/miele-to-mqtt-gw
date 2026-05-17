@@ -7,6 +7,7 @@ import (
 
 	"github.com/mqtt-home/miele-to-mqtt-gw/bridge"
 	"github.com/mqtt-home/miele-to-mqtt-gw/config"
+	"github.com/mqtt-home/miele-to-mqtt-gw/metrics"
 	"github.com/mqtt-home/miele-to-mqtt-gw/miele/api"
 	"github.com/mqtt-home/miele-to-mqtt-gw/miele/login"
 	"github.com/mqtt-home/miele-to-mqtt-gw/miele/sse"
@@ -43,17 +44,22 @@ func newApp(cfg config.Config, mgr *login.Manager) *app {
 // start launches SSE (when configured), the polling loop, and the periodic
 // token-refresh check. It does NOT block.
 func (a *app) start(ctx context.Context) {
+	metrics.SetSSEConnection("unknown")
 	a.pub.PublishMieleState("unknown")
+	a.mgr.SetOnRefresh(metrics.RecordTokenRefresh)
 
 	if a.cfg.Miele.Mode == "sse" {
 		a.sse = sse.Start(sse.Options{
 			AccessToken: a.mgr.CurrentAccessToken,
 			OnDevices:   a.onDevices,
+			OnEvent:     metrics.RecordSSEEvent,
 			OnStatus: func(s string) {
 				switch s {
 				case "connected":
+					metrics.SetSSEConnection("connected")
 					a.pub.PublishMieleState("connected")
 				case "disconnected":
+					metrics.SetSSEConnection("disconnected")
 					a.pub.PublishMieleState("disconnected")
 				}
 			},
@@ -72,6 +78,7 @@ func (a *app) onDevices(devs []api.Device) {
 	now := time.Now()
 	for _, d := range devs {
 		small := transform.Build(d, now)
+		metrics.RecordDevice(d.ID, small)
 		a.pub.PublishDevice(d.ID, small, []byte(d.Data))
 	}
 }
@@ -115,11 +122,15 @@ func (a *app) pollOnce(ctx context.Context) {
 		return
 	}
 	logger.Debug("Polling devices")
+	now := time.Now()
+	metrics.RecordPollAttempt(now)
 	devs, err := a.api.FetchDevices(ctx, tok)
 	if err != nil {
+		metrics.RecordPollError(time.Now(), err)
 		logger.Error("Polling failed", "error", err)
 		return
 	}
+	metrics.RecordPollSuccess(time.Now())
 	a.onDevices(devs)
 }
 

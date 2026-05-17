@@ -163,6 +163,40 @@ Valid log levels are:
 
 Not all levels are currently used.
 
+# Diagnostics
+
+The bridge exposes a small diagnostic HTTP listener on `:6060`:
+
+- `/debug/vars` — Go `expvar` snapshot. Includes a `miele` object alongside the
+  shared `mqtt` object:
+
+  ```json
+  {
+    "miele": {
+      "connection": "connected",
+      "devices": {
+        "000123456789": {
+          "phase": "DRYING", "phaseId": 1799, "state": "RUNNING",
+          "remainingDuration": "0:04", "remainingDurationMinutes": 4,
+          "timeCompleted": "12:35"
+        }
+      },
+      "sse":     { "last_event": "...", "events_total": 1234 },
+      "polling": { "last_attempt": "...", "last_success": "...", "last_error": "", "success_total": 23, "error_total": 0 },
+      "token":   { "expires_at": "...", "last_refresh": "...", "refresh_total": 5 }
+    }
+  }
+  ```
+
+  Tail a single field with `curl -s http://localhost:6060/debug/vars | jq .miele.sse`.
+
+- `/debug/pprof/*` — standard Go pprof endpoints (goroutines, heap, CPU, …).
+
+`:6060` is intended to be reachable from a trusted network only — do not
+expose it to the public internet. The container does not bind a public port
+by default; use SSH port-forwarding or a private overlay network when you
+need to inspect it from another host.
+
 # build
 
 The bridge is a Go application. The repository ships a `Makefile` and a

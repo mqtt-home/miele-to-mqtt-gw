@@ -14,11 +14,12 @@ import (
 // Manager owns the current token, performs login/refresh, and persists tokens
 // back to the config file when enabled. It is safe for concurrent use.
 type Manager struct {
-	mu      sync.RWMutex
-	tok     *Token
-	login   *Client
-	devices *api.Client
-	now     func() time.Time
+	mu        sync.RWMutex
+	tok       *Token
+	login     *Client
+	devices   *api.Client
+	now       func() time.Time
+	onRefresh func(now, expiresAt time.Time)
 }
 
 // NewManager builds a Manager with default Miele API clients. Tests can
@@ -40,6 +41,13 @@ func (m *Manager) SetClients(login *Client, devices *api.Client) {
 // SetNowFunc lets tests pin the clock.
 func (m *Manager) SetNowFunc(now func() time.Time) {
 	m.now = now
+}
+
+// SetOnRefresh registers a callback invoked after every successful Login
+// (whether via refresh-token or full code+token). It is used by the metrics
+// layer to record refresh events without introducing an import dependency.
+func (m *Manager) SetOnRefresh(fn func(now, expiresAt time.Time)) {
+	m.onRefresh = fn
 }
 
 // Current returns the in-memory token, or nil if none.
@@ -149,6 +157,10 @@ func (m *Manager) Login(ctx context.Context) (*Token, error) {
 			Refresh:    final.RefreshToken,
 			ValidUntil: final.ExpiresAt.UTC().Format(time.RFC3339),
 		})
+	}
+
+	if m.onRefresh != nil {
+		m.onRefresh(m.now(), final.ExpiresAt)
 	}
 
 	logger.Info("Login successful")
