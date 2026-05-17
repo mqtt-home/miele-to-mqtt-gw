@@ -88,5 +88,5 @@ release:
   mode: replace
   draft: false
   prerelease: auto
-  make_latest: true
+  make_latest: '{{ if .Prerelease }}false{{ else }}true{{ end }}'
   skip_upload: true
