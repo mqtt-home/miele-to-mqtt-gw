@@ -7,7 +7,7 @@ before:
 
 builds:
   - id: miele2mqtt
-    main: ./main.go
+    main: .
     binary: miele2mqtt
     goos:
       - linux
