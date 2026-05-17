@@ -3,7 +3,7 @@ module github.com/mqtt-home/miele-to-mqtt-gw
 go 1.25.0
 
 require (
-	github.com/philipparndt/go-logger v1.8.0
+	github.com/philipparndt/go-logger v1.9.0
 	github.com/philipparndt/mqtt-gateway v1.9.0
 )
 
