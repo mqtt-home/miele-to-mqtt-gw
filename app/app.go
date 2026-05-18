@@ -139,7 +139,15 @@ func (a *app) pollOnce(ctx context.Context) {
 		logger.Error("Polling failed", "error", err)
 		return
 	}
+	first := metrics.PollSuccessTotal() == 0
 	metrics.RecordPollSuccess(time.Now())
+	if first {
+		ids := make([]string, 0, len(devs))
+		for _, d := range devs {
+			ids = append(ids, d.ID)
+		}
+		logger.Info("Polled devices", "devices", ids)
+	}
 	a.onDevices(devs)
 }
 

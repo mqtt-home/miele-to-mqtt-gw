@@ -30,12 +30,10 @@ type Client struct {
 	BaseURL string
 }
 
-// NewClient builds a client with a sensible default timeout. 60s matches the
-// polling interval — slow Miele responses are common and the TypeScript
-// version (axios with no timeout) effectively waited forever.
+// NewClient builds a client with a sensible default timeout.
 func NewClient() *Client {
 	return &Client{
-		HTTP:    &http.Client{Timeout: 60 * time.Second},
+		HTTP:    &http.Client{Timeout: 30 * time.Second},
 		BaseURL: BaseURL,
 	}
 }
