@@ -6,7 +6,12 @@
         "password": "password",
         "retain": true,
         "message-interval": 30,
-        "full-message-topic": "home/miele"
+        "full-message-topic": "home/miele",
+        "discovery": {
+            "enabled": false,
+            "prefix": "homeassistant",
+            "device-name-prefix": "Miele"
+        }
     },
     "miele": {
         "client-id": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",

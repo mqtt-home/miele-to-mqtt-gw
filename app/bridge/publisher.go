@@ -11,24 +11,30 @@ import (
 	"github.com/philipparndt/mqtt-gateway/mqtt"
 )
 
+// publishAbsolute is the indirection used by the discovery layer so unit
+// tests can swap in a stub without standing up a real MQTT broker.
+var publishAbsolute = mqtt.PublishAbsolute
+
 // Publisher is the application-side MQTT wrapper. It owns the dedup cache and
 // knows about Miele-specific topic conventions (`<id>` for small, `<id>/full`
 // for the raw payload, `bridge/miele` for Miele connection status).
 type Publisher struct {
 	cfg config.Config
 
-	mu        sync.Mutex
-	lastHash  map[string]string
-	mieleLast string
+	mu               sync.Mutex
+	lastHash         map[string]string
+	mieleLast        string
+	discoveredTopics map[string]struct{}
 }
 
 // New builds a Publisher for the given config. It does NOT establish the MQTT
 // connection — call Start on mqtt-gateway separately.
 func New(cfg config.Config) *Publisher {
 	return &Publisher{
-		cfg:       cfg,
-		lastHash:  make(map[string]string),
-		mieleLast: "",
+		cfg:              cfg,
+		lastHash:         make(map[string]string),
+		mieleLast:        "",
+		discoveredTopics: make(map[string]struct{}),
 	}
 }
 
@@ -54,6 +60,46 @@ func (p *Publisher) PublishDevice(deviceID string, small transform.SmallMessage,
 
 	p.publishWithDedup(smallTopic, smallBytes)
 	p.publishWithDedup(fullTopic, fullBytes)
+
+	p.publishDiscovery(deviceID, rawFull)
+}
+
+// publishDiscovery sends one retained HA discovery config per entity for this
+// device, and records the topics so they can be cleared on shutdown. No-op
+// when discovery is disabled in config.
+func (p *Publisher) publishDiscovery(deviceID string, rawFull []byte) {
+	payloads, err := buildDiscoveryPayloads(p.cfg, deviceID, rawFull)
+	if err != nil {
+		logger.Warn("build discovery payloads", "device", deviceID, "error", err)
+		return
+	}
+	if len(payloads) == 0 {
+		return
+	}
+	for topic, body := range payloads {
+		p.mu.Lock()
+		p.discoveredTopics[topic] = struct{}{}
+		p.mu.Unlock()
+		p.publishWithDedup(topic, body)
+	}
+}
+
+// CleanupDiscovery publishes an empty retained payload to every discovery
+// topic the bridge has published during the run, so Home Assistant removes
+// the device from its registry. Safe to call when discovery was disabled —
+// the tracked set will be empty.
+func (p *Publisher) CleanupDiscovery() {
+	p.mu.Lock()
+	topics := make([]string, 0, len(p.discoveredTopics))
+	for t := range p.discoveredTopics {
+		topics = append(topics, t)
+	}
+	p.discoveredTopics = make(map[string]struct{})
+	p.mu.Unlock()
+
+	for _, t := range topics {
+		publishAbsolute(t, "", p.cfg.MQTT.Retain)
+	}
 }
 
 func (p *Publisher) publishWithDedup(topic string, payload []byte) {

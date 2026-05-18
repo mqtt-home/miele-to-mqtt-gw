@@ -207,6 +207,9 @@ func (a *app) stop() {
 		<-a.refreshDone
 		a.stopRefresh = nil
 	}
+	// Clear retained HA discovery topics before the final state publish so HA
+	// removes the device from its registry on graceful shutdown.
+	a.pub.CleanupDiscovery()
 	// Publish a final disconnected state so subscribers see a clean transition.
 	mqtt.PublishAbsolute(a.cfg.MieleStateTopic(), "disconnected", a.cfg.MQTT.Retain)
 }
