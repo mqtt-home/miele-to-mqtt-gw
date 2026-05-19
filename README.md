@@ -153,6 +153,89 @@ device updates. The defaults are tunable in the config:
 The `sse-backoff` block is optional. With it omitted, the defaults shown above
 apply.
 
+# Home Assistant integration
+
+The bridge can publish Home Assistant
+[MQTT-discovery](https://www.home-assistant.io/integrations/mqtt/#mqtt-discovery)
+config so each appliance shows up automatically as a device tile with named
+entities — no template YAML required. Discovery is **opt-in**:
+
+```json
+{
+  "mqtt": {
+    "deduplicate": true,
+    "discovery": {
+      "enabled": true,
+      "prefix": "homeassistant",
+      "device-name-prefix": "Miele"
+    }
+  }
+}
+```
+
+All three discovery fields are optional; the values above are the defaults
+applied when `enabled` is set to `true`. `mqtt.deduplicate: true` is
+recommended alongside discovery — it suppresses the retained re-publish of
+each discovery config on every device update, which otherwise adds steady
+broker traffic.
+
+## Topics produced
+
+For every appliance the bridge sees, it publishes one retained discovery
+config per entity:
+
+```
+<prefix>/sensor/miele_<id>/state/config
+<prefix>/sensor/miele_<id>/phase/config
+<prefix>/sensor/miele_<id>/remaining_duration/config
+<prefix>/sensor/miele_<id>/remaining_minutes/config
+<prefix>/sensor/miele_<id>/time_completed/config
+```
+
+`<id>` is `ident.deviceIdentLabel.fabNumber` from the Miele full payload
+(globally unique per appliance). If that field is missing, the bridge falls
+back to the Miele API device id and logs a warning.
+
+## Entities
+
+| Entity                | Source field (small message)    | Notes                                      |
+| --------------------- | ------------------------------- | ------------------------------------------ |
+| `state`               | `state`                         | Miele status (`RUNNING`, `OFF`, …)         |
+| `phase`               | `phase`                         | Program phase (`DRYING`, `MAIN_WASH`, …)   |
+| `remaining_duration`  | `remainingDuration`             | `HH:MM` string                             |
+| `remaining_minutes`   | `remainingDurationMinutes`      | `unit: min`, `device_class: duration`      |
+| `time_completed`      | `timeCompleted`                 | Wall-clock `HH:MM`                         |
+
+Each entity's `state_topic` points at the existing `<mqtt.topic>/<deviceId>`
+small-message JSON and uses `value_template` to pick out the relevant field —
+the data plane is unchanged.
+
+## Device registry mapping
+
+| HA `device` field | Source                                       |
+| ----------------- | -------------------------------------------- |
+| `manufacturer`    | `"Miele"`                                    |
+| `model`           | `ident.type.value_localized`, else `techType`|
+| `sw_version`      | `ident.xkmIdentLabel.releaseVersion`         |
+| `serial_number`   | The resolved `<id>` (fabNumber or fallback)  |
+| `name`            | `<device-name-prefix> <type> <id>`           |
+
+## Availability
+
+Each entity uses `availability_mode: any` with two entries against
+`<mqtt.topic>/bridge/miele` — one matching `connected`, one matching
+`degraded`. HA shows the device as available in either healthy or degraded
+state and only marks it unavailable on a true `disconnected`. (HA 2023.8 or
+newer respects `availability_mode: any`; older versions fall back to a single
+availability check that flips on `degraded`.)
+
+## Removal on shutdown
+
+On `SIGTERM` / `SIGINT`, the bridge publishes an empty retained payload to
+every discovery topic it announced during the run, so HA removes the device
+from its registry. A hard crash (kill -9, OOM, panic) leaves the retained
+payloads in the broker; the next bridge start re-asserts them.
+
 # run
 
 Obtain your API credentials from https://www.miele.com/developer/

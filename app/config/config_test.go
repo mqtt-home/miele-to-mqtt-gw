@@ -212,6 +212,81 @@ func TestBridgeInfoTopic_Override(t *testing.T) {
 	}
 }
 
+func TestLoadConfig_DiscoveryDefaults(t *testing.T) {
+	tmp := t.TempDir()
+	p := filepath.Join(tmp, "config.json")
+	body := `{"mqtt": {"url": "tcp://localhost:1883", "topic": "miele"}}`
+	if err := os.WriteFile(p, []byte(body), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	c, err := LoadConfig(p)
+	if err != nil {
+		t.Fatalf("LoadConfig: %v", err)
+	}
+	d := c.MQTT.Discovery
+	if d == nil {
+		t.Fatal("Discovery should be populated with defaults")
+	}
+	if d.Enabled {
+		t.Errorf("Enabled = true, want default false")
+	}
+	if d.Prefix != "homeassistant" {
+		t.Errorf("Prefix = %q, want homeassistant", d.Prefix)
+	}
+	if d.DeviceNamePrefix != "Miele" {
+		t.Errorf("DeviceNamePrefix = %q, want Miele", d.DeviceNamePrefix)
+	}
+}
+
+func TestLoadConfig_DiscoveryEnabledKeepsOtherDefaults(t *testing.T) {
+	tmp := t.TempDir()
+	p := filepath.Join(tmp, "config.json")
+	body := `{
+        "mqtt": {"url": "tcp://localhost:1883", "topic": "miele",
+                 "discovery": {"enabled": true}}
+    }`
+	if err := os.WriteFile(p, []byte(body), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	c, err := LoadConfig(p)
+	if err != nil {
+		t.Fatalf("LoadConfig: %v", err)
+	}
+	d := c.MQTT.Discovery
+	if !d.Enabled {
+		t.Error("Enabled should be true")
+	}
+	if d.Prefix != "homeassistant" {
+		t.Errorf("Prefix = %q, want default homeassistant", d.Prefix)
+	}
+	if d.DeviceNamePrefix != "Miele" {
+		t.Errorf("DeviceNamePrefix = %q, want default Miele", d.DeviceNamePrefix)
+	}
+}
+
+func TestLoadConfig_DiscoveryCustomFields(t *testing.T) {
+	tmp := t.TempDir()
+	p := filepath.Join(tmp, "config.json")
+	body := `{
+        "mqtt": {"url": "tcp://localhost:1883", "topic": "miele",
+                 "discovery": {"enabled": true, "prefix": "ha", "device-name-prefix": "Kitchen"}}
+    }`
+	if err := os.WriteFile(p, []byte(body), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	c, err := LoadConfig(p)
+	if err != nil {
+		t.Fatalf("LoadConfig: %v", err)
+	}
+	d := c.MQTT.Discovery
+	if d.Prefix != "ha" {
+		t.Errorf("Prefix = %q, want ha", d.Prefix)
+	}
+	if d.DeviceNamePrefix != "Kitchen" {
+		t.Errorf("DeviceNamePrefix = %q, want Kitchen", d.DeviceNamePrefix)
+	}
+}
+
 func TestLoadConfig_SSEBackoffDefaults(t *testing.T) {
 	tmp := t.TempDir()
 	p := filepath.Join(tmp, "config.json")

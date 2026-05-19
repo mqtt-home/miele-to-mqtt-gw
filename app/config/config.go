@@ -13,16 +13,25 @@ import (
 )
 
 type MQTTConfig struct {
-	URL             string `json:"url"`
-	Topic           string `json:"topic"`
-	ClientID        string `json:"client-id,omitempty"`
-	Username        string `json:"username,omitempty"`
-	Password        string `json:"password,omitempty"`
-	Retain          bool   `json:"retain"`
-	QoS             byte   `json:"qos"`
-	BridgeInfo      bool   `json:"bridge-info"`
-	BridgeInfoTopic string `json:"bridge-info-topic,omitempty"`
-	Deduplicate     bool   `json:"deduplicate,omitempty"`
+	URL             string           `json:"url"`
+	Topic           string           `json:"topic"`
+	ClientID        string           `json:"client-id,omitempty"`
+	Username        string           `json:"username,omitempty"`
+	Password        string           `json:"password,omitempty"`
+	Retain          bool             `json:"retain"`
+	QoS             byte             `json:"qos"`
+	BridgeInfo      bool             `json:"bridge-info"`
+	BridgeInfoTopic string           `json:"bridge-info-topic,omitempty"`
+	Deduplicate     bool             `json:"deduplicate,omitempty"`
+	Discovery       *DiscoveryConfig `json:"discovery,omitempty"`
+}
+
+// DiscoveryConfig controls Home Assistant MQTT-discovery output. All fields
+// optional; defaults applied by ApplyDefaults.
+type DiscoveryConfig struct {
+	Enabled          bool   `json:"enabled,omitempty"`
+	Prefix           string `json:"prefix,omitempty"`
+	DeviceNamePrefix string `json:"device-name-prefix,omitempty"`
 }
 
 func (m MQTTConfig) ToGatewayConfig() gwconfig.MQTTConfig {
@@ -141,6 +150,15 @@ func ApplyDefaults(c *Config) {
 	}
 	if c.Names == nil {
 		c.Names = make(map[string]string)
+	}
+	if c.MQTT.Discovery == nil {
+		c.MQTT.Discovery = &DiscoveryConfig{}
+	}
+	if c.MQTT.Discovery.Prefix == "" {
+		c.MQTT.Discovery.Prefix = "homeassistant"
+	}
+	if c.MQTT.Discovery.DeviceNamePrefix == "" {
+		c.MQTT.Discovery.DeviceNamePrefix = "Miele"
 	}
 	if c.Miele.SSEBackoff == nil {
 		c.Miele.SSEBackoff = &SSEBackoffConfig{}
