@@ -10,6 +10,8 @@ github.com/philipparndt/go-logger v1.9.0 h1:2bfpyowA+6NGzVY24w/Qd68UKnZAWkdETz72
 github.com/philipparndt/go-logger v1.9.0/go.mod h1:HHPgoelwYWzmntIkHqtJ/VvR6rOyHHMsJQFgA7MpEwQ=
 github.com/philipparndt/mqtt-gateway v1.10.0 h1:6b2YcekUDKEmJrUrU9NgOZuNi8015HNcxy+aK1AuiwI=
 github.com/philipparndt/mqtt-gateway v1.10.0/go.mod h1:HCJFPtKU79ISlepAVNPoibk4OIs8PqWoamHZp/40mcs=
+github.com/philipparndt/mqtt-gateway v1.11.0 h1:9BzREn76XC77fjg3V4ltrlPaFLLkgOiQRSBCsZIOYQk=
+github.com/philipparndt/mqtt-gateway v1.11.0/go.mod h1:HCJFPtKU79ISlepAVNPoibk4OIs8PqWoamHZp/40mcs=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
 github.com/stretchr/testify v1.9.0 h1:HtqpIVDClZ4nwg75+f6Lvsy/wHu+3BoSGCbBAcpTsTg=
