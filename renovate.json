@@ -7,5 +7,6 @@
         "dockerfile",
         "docker-compose",
         "github-actions"
-    ]
+    ],
+    "minimumReleaseAge": "7 days"
 }
