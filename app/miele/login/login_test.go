@@ -109,6 +109,55 @@ func TestFetchCode_MissingLocation(t *testing.T) {
 	}
 }
 
+func TestFetchCode_ConsentPage(t *testing.T) {
+	_, lc, _ := stubMiele(t, struct {
+		code    http.HandlerFunc
+		token   http.HandlerFunc
+		devices http.HandlerFunc
+	}{
+		code: func(w http.ResponseWriter, _ *http.Request) {
+			w.WriteHeader(http.StatusOK)
+			_, _ = io.WriteString(w, `<html><body id="mieleLoginSite">
+<h1 class="center mediumFont">Grant access</h1>
+<form class="hidden" method="get" action="/v1/">
+<input type="hidden" name="code" value="DE_3a2efb6d1ccf68efc9fef07d1869ce62">
+<input type="hidden" name="state" value="login">
+<input id="button" class="waves-effect waves-light btn miele-red" type="submit"
+value="ALLOW">
+</form>
+<form class="hidden" method="get" action="/v1/">
+<input type="hidden" name="error" value="access_denied">
+<input id="button" class="waves-effect waves-light btn miele-gray" type="submit"
+value="DENY">
+</form>
+</body></html>`)
+		},
+	})
+	code, err := lc.FetchCode(context.Background(), config.MieleConfig{})
+	if err != nil {
+		t.Fatalf("FetchCode: %v", err)
+	}
+	if code != "DE_3a2efb6d1ccf68efc9fef07d1869ce62" {
+		t.Errorf("code = %q", code)
+	}
+}
+
+func TestFetchCode_OKWithoutCode(t *testing.T) {
+	_, lc, _ := stubMiele(t, struct {
+		code    http.HandlerFunc
+		token   http.HandlerFunc
+		devices http.HandlerFunc
+	}{
+		code: func(w http.ResponseWriter, _ *http.Request) {
+			w.WriteHeader(http.StatusOK)
+			_, _ = io.WriteString(w, `<html><body>Invalid credentials</body></html>`)
+		},
+	})
+	if _, err := lc.FetchCode(context.Background(), config.MieleConfig{}); err == nil {
+		t.Fatal("expected error for 200 without code")
+	}
+}
+
 func TestFetchToken_Success(t *testing.T) {
 	_, lc, _ := stubMiele(t, struct {
 		code    http.HandlerFunc

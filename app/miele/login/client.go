@@ -5,9 +5,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"html"
 	"io"
 	"net/http"
 	"net/url"
+	"regexp"
 	"strings"
 	"time"
 
@@ -68,6 +70,16 @@ func (c *Client) FetchCode(ctx context.Context, cfg config.MieleConfig) (string,
 		return "", err
 	}
 	defer resp.Body.Close()
+	if resp.StatusCode == http.StatusOK {
+		// Miele may answer with a "Grant access" consent page instead of
+		// redirecting. Its ALLOW form merely submits the code to the
+		// redirect_uri, so accepting the consent means taking the code from it.
+		body, _ := io.ReadAll(resp.Body)
+		if code := codeFromConsentPage(string(body)); code != "" {
+			return code, nil
+		}
+		return "", fmt.Errorf("fetch code: unexpected status %d: %s", resp.StatusCode, string(body))
+	}
 	if resp.StatusCode != http.StatusFound {
 		body, _ := io.ReadAll(resp.Body)
 		return "", fmt.Errorf("fetch code: unexpected status %d: %s", resp.StatusCode, string(body))
@@ -86,6 +98,26 @@ func (c *Client) FetchCode(ctx context.Context, cfg config.MieleConfig) (string,
 		return "", errors.New("fetch code: code missing in Location")
 	}
 	return code, nil
+}
+
+var (
+	inputTagRe  = regexp.MustCompile(`(?is)<input\b[^>]*>`)
+	nameCodeRe  = regexp.MustCompile(`(?i)\bname\s*=\s*["']code["']`)
+	valueAttrRe = regexp.MustCompile(`(?i)\bvalue\s*=\s*["']([^"']*)["']`)
+)
+
+// codeFromConsentPage extracts the authorization code from the hidden
+// `code` input of the consent page's ALLOW form. Returns "" if absent.
+func codeFromConsentPage(body string) string {
+	for _, tag := range inputTagRe.FindAllString(body, -1) {
+		if !nameCodeRe.MatchString(tag) {
+			continue
+		}
+		if m := valueAttrRe.FindStringSubmatch(tag); m != nil && m[1] != "" {
+			return html.UnescapeString(m[1])
+		}
+	}
+	return ""
 }
 
 // FetchToken exchanges an authorization code for tokens.
