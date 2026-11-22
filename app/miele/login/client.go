@@ -19,17 +19,24 @@ import (
 const (
 	// BaseURL is the Miele cloud root; tests inject their own via Client.BaseURL.
 	BaseURL = "https://api.mcs3.miele.com"
+	// AuthBaseURL is the root of the OAuth2 provider with device-specific
+	// permissions; tests inject their own via Client.AuthBaseURL.
+	AuthBaseURL = "https://auth.domestic.miele-iot.com/partner/realms/mcs/protocol/openid-connect"
 
 	codePath  = "/oauth/auth"
 	tokenPath = "/thirdparty/token"
+
+	oauth2AuthPath  = "/auth"
+	oauth2TokenPath = "/token"
 )
 
-// Client performs the Miele OAuth2 flow. It is safe for concurrent use; the
-// HTTP client never follows redirects so we can read the Location header
-// directly from the 302 response.
+// Client performs the Miele OAuth2 flows (legacy and device-specific). It is
+// safe for concurrent use; the HTTP client never follows redirects so we can
+// read the Location header directly from the 302 response.
 type Client struct {
-	HTTP    *http.Client
-	BaseURL string
+	HTTP        *http.Client
+	BaseURL     string
+	AuthBaseURL string
 }
 
 // NewClient returns a Client with a sensible timeout and a redirect policy
@@ -42,7 +49,8 @@ func NewClient() *Client {
 				return http.ErrUseLastResponse
 			},
 		},
-		BaseURL: BaseURL,
+		BaseURL:     BaseURL,
+		AuthBaseURL: AuthBaseURL,
 	}
 }
 
@@ -129,7 +137,7 @@ func (c *Client) FetchToken(ctx context.Context, cfg config.MieleConfig, code st
 	form.Set("redirect_uri", "/v1/devices")
 	form.Set("grant_type", "authorization_code")
 	form.Set("state", "token")
-	return c.postToken(ctx, form)
+	return c.postToken(ctx, c.BaseURL+tokenPath, form)
 }
 
 // RefreshToken exchanges a refresh_token for a new access_token.
@@ -139,11 +147,11 @@ func (c *Client) RefreshToken(ctx context.Context, cfg config.MieleConfig, refre
 	form.Set("client_secret", cfg.ClientSecret)
 	form.Set("refresh_token", refreshToken)
 	form.Set("grant_type", "refresh_token")
-	return c.postToken(ctx, form)
+	return c.postToken(ctx, c.BaseURL+tokenPath, form)
 }
 
-func (c *Client) postToken(ctx context.Context, form url.Values) (TokenResult, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.BaseURL+tokenPath, strings.NewReader(form.Encode()))
+func (c *Client) postToken(ctx context.Context, tokenURL string, form url.Values) (TokenResult, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, tokenURL, strings.NewReader(form.Encode()))
 	if err != nil {
 		return TokenResult{}, err
 	}

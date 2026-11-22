@@ -38,7 +38,72 @@ See [fullmessage-example](fullmessage-example.md)
 
 ## Example configuration
 
-### With username/password
+### With browser login (Miele OAuth2 with device-specific permissions)
+
+Miele's [new OAuth2 provider](https://developer.miele.com/docs/authorization) replaces the legacy
+username/password login. The user logs in once in a browser and selects which appliances the
+gateway may access. No username/password is stored in the configuration.
+
+```json
+{
+  "mqtt": {
+    "url": "tcp://192.168.2.2:1883",
+    "client-id": "miele-mqtt-gw",
+    "username": "username",
+    "password": "password",
+    "retain": true,
+
+    "topic": "home/miele",
+    "deduplicate": true
+  },
+
+  "miele": {
+    "client-id": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+    "client-secret": "12345678901234567890123456789012",
+    "auth-type": "per-device",
+    "mode": "sse"
+  }
+}
+```
+
+When a login is required, the gateway opens a temporary login page on port 6061 and logs:
+
+```
+Miele authorization required. To login, visit now: http://localhost:6061/ or http://192.168.2.10:6061/
+```
+
+1. Open the page in any browser. A very simple web page opens.
+2. Follow "Login with Miele", log in and grant access to your appliances.
+3. Miele redirects back to the page, the gateway fetches its token and closes the page.
+
+If the redirect cannot reach the gateway (e.g. you logged in on another computer via `localhost`),
+copy the URL you were redirected to from the browser's address bar and paste it into the form
+on the login page.
+
+The redirect URI sent to Miele is derived from the URL you used to open the page
+(`http://<host>:6061/callback`). It must be allowed for your client at Miele. Use one
+fixed host name, or set `redirect-uri` explicitly.
+
+| Option         | Default                      | Description                                                                                          |
+|----------------|------------------------------|------------------------------------------------------------------------------------------------------|
+| `auth-type`    | derived                      | `legacy` or `per-device`. If unset: `legacy` when `username` and `password` are set, `per-device` otherwise |
+| `auth-listen`  | `:6061`                      | Bind address of the temporary login page                                                             |
+| `redirect-uri` | derived from the request     | Fixed redirect URI, e.g. when the page sits behind a reverse proxy                                   |
+| `scope`        | `openid mcs_thirdparty_read` | Requested OAuth2 scopes                                                                              |
+
+Access tokens of the new provider currently expire within about 60 minutes. The gateway refreshes
+them automatically with the refresh token about five minutes before they expire, so no new
+browser login is needed for that. A new browser login is only required once the refresh token
+expires, which is currently about one year after the initial login. Refreshing does not extend
+this period, so plan for a new browser login about once a year. With `persistToken` enabled, the gateway stores that time as `refreshValidUntil` next to
+the token in the config file (`miele.token.refreshValidUntil`, UTC), so you can see when the next
+login will be due.
+
+When running in Docker, publish port 6061 (`-p 6061:6061`). The page only listens while a login
+is pending. During a login at runtime (e.g. after the refresh token expired), the
+`<topic>/bridge/miele` state is `authorization-required`.
+
+### With username/password (Legacy OAuth)
 
 ```json
 {
@@ -64,6 +129,13 @@ See [fullmessage-example](fullmessage-example.md)
   }
 }
 ```
+
+Stored tokens are refreshed at the provider that issued them. Legacy tokens (country prefix plus
+32 hex digits, e.g. `DE_…`) use the legacy endpoint, all others the new provider. With `auth-type`
+unset and no username/password, an existing legacy token keeps working until it can no longer be
+refreshed, then the browser login starts. With `auth-type: per-device`, a stored legacy token is
+discarded right away.
+
 
 ### With access token
 ```json

@@ -25,4 +25,7 @@ WORKDIR /
 COPY --from=builder /app/miele2mqtt /miele2mqtt
 USER nonroot:nonroot
 
+# Temporary login page of the browser-based Miele login (auth-type "per-device")
+EXPOSE 6061
+
 ENTRYPOINT ["/miele2mqtt", "/var/lib/miele-to-mqtt-gw/config.json"]

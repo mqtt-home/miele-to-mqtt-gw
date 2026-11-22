@@ -49,6 +49,9 @@ type TokenConfig struct {
 	Access     string `json:"access"`
 	Refresh    string `json:"refresh"`
 	ValidUntil string `json:"validUntil,omitempty"`
+	// RefreshValidUntil is when the refresh token expires, i.e. when the next
+	// login is required. Informational; empty when the provider did not report it.
+	RefreshValidUntil string `json:"refreshValidUntil,omitempty"`
 }
 
 type MieleConfig struct {
@@ -63,6 +66,50 @@ type MieleConfig struct {
 	ConnectionCheckInterval int                `json:"connection-check-interval,omitempty"`
 	PersistToken            bool               `json:"persistToken"`
 	SSEBackoff              *SSEBackoffConfig  `json:"sse-backoff,omitempty"`
+
+	// AuthType selects the full-login flow: AuthTypeLegacy (username/password
+	// against api.mcs3.miele.com) or AuthTypeDevice (browser login against the
+	// OAuth2 provider with device-specific permissions). Empty means derived,
+	// see ResolvedAuthType.
+	AuthType string `json:"auth-type,omitempty"`
+	// RedirectURI overrides the redirect_uri of the browser login. Empty means
+	// it is derived from the request to the login page.
+	RedirectURI string `json:"redirect-uri,omitempty"`
+	// AuthListen is the bind address of the temporary login page.
+	AuthListen string `json:"auth-listen,omitempty"`
+	// Scope is the OAuth2 scope requested by the browser login.
+	Scope string `json:"scope,omitempty"`
+}
+
+const (
+	AuthTypeLegacy = "legacy"
+	AuthTypeDevice = "per-device"
+)
+
+// ResolvedAuthType returns the configured auth type, or derives it when unset:
+// legacy when username and password are present, per-device otherwise.
+func (m MieleConfig) ResolvedAuthType() string {
+	if m.AuthType != "" {
+		return m.AuthType
+	}
+	if m.Username != "" && m.Password != "" {
+		return AuthTypeLegacy
+	}
+	return AuthTypeDevice
+}
+
+func validateAuth(m MieleConfig) error {
+	switch m.AuthType {
+	case "", AuthTypeDevice:
+		return nil
+	case AuthTypeLegacy:
+		if m.Username == "" || m.Password == "" {
+			return errors.New("miele.auth-type legacy requires miele.username and miele.password")
+		}
+		return nil
+	default:
+		return fmt.Errorf("miele.auth-type: unknown value %q (expected %q or %q)", m.AuthType, AuthTypeLegacy, AuthTypeDevice)
+	}
 }
 
 // SSEBackoffConfig tunes the exponential reconnect behavior of the SSE client.
@@ -141,6 +188,12 @@ func ApplyDefaults(c *Config) {
 	}
 	if c.Miele.CountryCode == "" {
 		c.Miele.CountryCode = "de-DE"
+	}
+	if c.Miele.AuthListen == "" {
+		c.Miele.AuthListen = ":6061"
+	}
+	if c.Miele.Scope == "" {
+		c.Miele.Scope = "openid mcs_thirdparty_read"
 	}
 	if c.Miele.ConnectionCheckInterval == 0 {
 		c.Miele.ConnectionCheckInterval = 10000
@@ -231,6 +284,10 @@ func LoadConfig(path string) (Config, error) {
 
 	ApplyDefaults(&c)
 
+	if err := validateAuth(c.Miele); err != nil {
+		return Config{}, fmt.Errorf("parse config %s: %w", path, err)
+	}
+
 	if err := parseSSEBackoff(c.Miele.SSEBackoff); err != nil {
 		return Config{}, fmt.Errorf("parse config %s: %w", path, err)
 	}
@@ -307,6 +364,9 @@ func PersistToken(token TokenConfig) {
 	if token.ValidUntil != "" {
 		newTok["validUntil"] = token.ValidUntil
 	}
+	if token.RefreshValidUntil != "" {
+		newTok["refreshValidUntil"] = token.RefreshValidUntil
+	}
 
 	if existing, ok := mieleAny["token"].(map[string]any); ok {
 		if tokensEqual(existing, newTok) {
@@ -331,9 +391,10 @@ func PersistToken(token TokenConfig) {
 	// Keep the in-memory config in sync so subsequent reads see the new token.
 	mu.Lock()
 	cfg.Miele.Token = &TokenConfig{
-		Access:     token.Access,
-		Refresh:    token.Refresh,
-		ValidUntil: token.ValidUntil,
+		Access:            token.Access,
+		Refresh:           token.Refresh,
+		ValidUntil:        token.ValidUntil,
+		RefreshValidUntil: token.RefreshValidUntil,
 	}
 	mu.Unlock()
 

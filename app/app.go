@@ -47,6 +47,9 @@ func (a *app) start(ctx context.Context) {
 	metrics.SetSSEConnection("unknown")
 	a.pub.PublishMieleState("unknown")
 	a.mgr.SetOnRefresh(metrics.RecordTokenRefresh)
+	a.mgr.SetOnAuthRequired(func() {
+		a.pub.PublishMieleState("authorization-required")
+	})
 
 	if a.cfg.Miele.Mode == "sse" {
 		backoff := a.cfg.Miele.SSEBackoff
