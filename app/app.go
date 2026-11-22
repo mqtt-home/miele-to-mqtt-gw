@@ -8,12 +8,12 @@ import (
 	"github.com/mqtt-home/miele-to-mqtt-gw/bridge"
 	"github.com/mqtt-home/miele-to-mqtt-gw/config"
 	"github.com/mqtt-home/miele-to-mqtt-gw/metrics"
+	"github.com/mqtt-home/miele-to-mqtt-gw/mqtt"
 	"github.com/mqtt-home/miele-to-mqtt-gw/miele/api"
 	"github.com/mqtt-home/miele-to-mqtt-gw/miele/login"
 	"github.com/mqtt-home/miele-to-mqtt-gw/miele/sse"
 	"github.com/mqtt-home/miele-to-mqtt-gw/miele/transform"
 	"github.com/philipparndt/go-logger"
-	"github.com/philipparndt/mqtt-gateway/mqtt"
 )
 
 // app wires together login + SSE + polling + MQTT publishing. It is created
@@ -30,6 +30,7 @@ type app struct {
 	stopPolling   chan struct{}
 	refreshDone   chan struct{}
 	pollingDone   chan struct{}
+	pollNow       chan struct{}
 }
 
 func newApp(cfg config.Config, mgr *login.Manager) *app {
@@ -38,6 +39,7 @@ func newApp(cfg config.Config, mgr *login.Manager) *app {
 		mgr:    mgr,
 		api:    api.NewClient(),
 		pub:    bridge.New(cfg),
+		pollNow: make(chan struct{}, 1),
 	}
 }
 
@@ -46,6 +48,7 @@ func newApp(cfg config.Config, mgr *login.Manager) *app {
 func (a *app) start(ctx context.Context) {
 	metrics.SetSSEConnection("unknown")
 	a.pub.PublishMieleState("unknown")
+	mqtt.SetOnReconnect(a.onMQTTReconnect)
 	a.mgr.SetOnRefresh(metrics.RecordTokenRefresh)
 
 	if a.cfg.Miele.Mode == "sse" {
@@ -119,9 +122,23 @@ func (a *app) startPolling(ctx context.Context) {
 				return
 			case <-ticker.C:
 				a.pollOnce(ctx)
+			case <-a.pollNow:
+				a.pollOnce(ctx)
 			}
 		}
 	}()
+}
+
+// onMQTTReconnect restores the published state after the MQTT connection was
+// re-established: anything sent during the outage was dropped, so reset the
+// dedup cache and fetch the devices right away instead of waiting for the
+// next polling tick.
+func (a *app) onMQTTReconnect() {
+	a.pub.Resync()
+	select {
+	case a.pollNow <- struct{}{}:
+	default: // a poll is already pending
+	}
 }
 
 func (a *app) pollOnce(ctx context.Context) {

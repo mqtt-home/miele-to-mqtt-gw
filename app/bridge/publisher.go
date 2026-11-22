@@ -7,8 +7,8 @@ import (
 
 	"github.com/mqtt-home/miele-to-mqtt-gw/config"
 	"github.com/mqtt-home/miele-to-mqtt-gw/miele/transform"
+	"github.com/mqtt-home/miele-to-mqtt-gw/mqtt"
 	"github.com/philipparndt/go-logger"
-	"github.com/philipparndt/mqtt-gateway/mqtt"
 )
 
 // publishAbsolute is the indirection used by the discovery layer so unit
@@ -28,7 +28,7 @@ type Publisher struct {
 }
 
 // New builds a Publisher for the given config. It does NOT establish the MQTT
-// connection — call Start on mqtt-gateway separately.
+// connection — call mqtt.Start separately.
 func New(cfg config.Config) *Publisher {
 	return &Publisher{
 		cfg:              cfg,
@@ -135,4 +135,17 @@ func (p *Publisher) PublishMieleState(state string) {
 func hashPayload(b []byte) string {
 	sum := sha256.Sum256(b)
 	return hex.EncodeToString(sum[:])
+}
+
+// Resync forgets the dedup cache and republishes the last Miele state. Call it
+// after an MQTT reconnect: messages published during the outage were dropped,
+// so the next device update must go out even if it matches the cached hash.
+func (p *Publisher) Resync() {
+	p.mu.Lock()
+	p.lastHash = make(map[string]string)
+	state := p.mieleLast
+	p.mu.Unlock()
+	if state != "" {
+		mqtt.PublishAbsolute(p.cfg.MieleStateTopic(), state, p.cfg.MQTT.Retain)
+	}
 }

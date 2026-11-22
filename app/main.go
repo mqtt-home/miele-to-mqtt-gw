@@ -12,9 +12,9 @@ import (
 	"github.com/mqtt-home/miele-to-mqtt-gw/config"
 	"github.com/mqtt-home/miele-to-mqtt-gw/metrics"
 	"github.com/mqtt-home/miele-to-mqtt-gw/miele/login"
+	"github.com/mqtt-home/miele-to-mqtt-gw/mqtt"
 	"github.com/mqtt-home/miele-to-mqtt-gw/version"
 	"github.com/philipparndt/go-logger"
-	"github.com/philipparndt/mqtt-gateway/mqtt"
 )
 
 // pprofAddr is the bind address for the diagnostic listener. Empty disables.
@@ -63,25 +63,37 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
+	// Cancel the context on SIGINT/SIGTERM so a shutdown also interrupts the
+	// wait for the MQTT broker below.
+	sigCh := make(chan os.Signal, 1)
+	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
+	go func() {
+		<-sigCh
+		cancel()
+	}()
+
 	if _, err := mgr.Login(ctx); err != nil {
 		logger.Error("Initial login failed", "error", err)
 		os.Exit(1)
 	}
 
-	// MQTT connection. mqtt-gateway handles `bridge/state` (online/offline)
-	// via its own last-will and on-connect publish.
-	mqtt.Start(cfg.MQTT.ToGatewayConfig(), "miele2mqtt")
+	// MQTT connection. Blocks until the broker is reachable (retrying every
+	// 5 s); afterwards lost connections are re-established automatically.
+	// `bridge/state` (online/offline) is handled via last-will and on-connect
+	// publish.
+	if err := mqtt.Start(ctx, cfg.MQTT.ToGatewayConfig(), "miele2mqtt"); err != nil {
+		logger.Info("Shutting down before MQTT connection was established")
+		return
+	}
 
 	app := newApp(cfg, mgr)
 	app.start(ctx)
 
 	logger.Info("Application is now ready.")
 
-	sigCh := make(chan os.Signal, 1)
-	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
-	<-sigCh
+	<-ctx.Done()
 
 	logger.Info("Shutting down")
-	cancel()
 	app.stop()
+	mqtt.Stop()
 }
