@@ -74,9 +74,21 @@ func (p *Publisher) publishDiscovery(deviceID string, rawFull []byte) {
 		logger.Warn("build discovery payloads", "device", deviceID, "error", err)
 		return
 	}
-	if len(payloads) == 0 {
+	p.publishDiscoveryPayloads(payloads)
+}
+
+// PublishGatewayDiscovery announces the gateway's own HA device with its
+// diagnostic sensors. No-op when discovery is disabled in config.
+func (p *Publisher) PublishGatewayDiscovery(swVersion string) {
+	payloads, err := buildGatewayDiscoveryPayloads(p.cfg, swVersion)
+	if err != nil {
+		logger.Warn("build gateway discovery payloads", "error", err)
 		return
 	}
+	p.publishDiscoveryPayloads(payloads)
+}
+
+func (p *Publisher) publishDiscoveryPayloads(payloads map[string][]byte) {
 	for topic, body := range payloads {
 		p.mu.Lock()
 		p.discoveredTopics[topic] = struct{}{}
@@ -116,7 +128,7 @@ func (p *Publisher) publishWithDedup(topic string, payload []byte) {
 		}
 	}
 
-	mqtt.PublishAbsolute(topic, string(payload), p.cfg.MQTT.Retain)
+	publishAbsolute(topic, string(payload), p.cfg.MQTT.Retain)
 }
 
 // PublishMieleState updates `<topic>/bridge/miele` to one of "unknown",

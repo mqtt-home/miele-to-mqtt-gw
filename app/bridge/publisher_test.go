@@ -234,3 +234,16 @@ func TestPublisher_Warning(t *testing.T) {
 		t.Errorf("calls = %+v", rec.calls)
 	}
 }
+
+func TestPublisher_GatewayDiscoveryIsCleanedUp(t *testing.T) {
+	rec := withStubPublish(t)
+	p := New(discoveryEnabledCfg())
+
+	p.PublishGatewayDiscovery("dev")
+	rec.calls = nil
+	p.CleanupDiscovery()
+
+	if len(rec.calls) != len(gatewayEntities) {
+		t.Errorf("cleanup calls = %+v, want %d", rec.calls, len(gatewayEntities))
+	}
+}

@@ -13,6 +13,7 @@ import (
 	"github.com/mqtt-home/miele-to-mqtt-gw/miele/login"
 	"github.com/mqtt-home/miele-to-mqtt-gw/miele/sse"
 	"github.com/mqtt-home/miele-to-mqtt-gw/miele/transform"
+	"github.com/mqtt-home/miele-to-mqtt-gw/version"
 	"github.com/philipparndt/go-logger"
 	"github.com/philipparndt/mqtt-gateway/mqtt"
 )
@@ -47,6 +48,7 @@ func newApp(cfg config.Config, mgr *login.Manager) *app {
 func (a *app) start(ctx context.Context) {
 	metrics.SetSSEConnection("unknown")
 	a.pub.PublishMieleState("unknown")
+	a.pub.PublishGatewayDiscovery(version.Version)
 	a.mgr.SetOnRefresh(metrics.RecordTokenRefresh)
 	a.mgr.SetOnAuthRequired(func() {
 		a.pub.PublishMieleState("authorization-required")

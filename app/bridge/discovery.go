@@ -39,8 +39,9 @@ type DiscoveryPayload struct {
 	UnitOfMeasurement string                  `json:"unit_of_measurement,omitempty"`
 	DeviceClass       string                  `json:"device_class,omitempty"`
 	StateClass        string                  `json:"state_class,omitempty"`
-	Availability      []DiscoveryAvailability `json:"availability"`
-	AvailabilityMode  string                  `json:"availability_mode"`
+	EntityCategory    string                  `json:"entity_category,omitempty"`
+	Availability      []DiscoveryAvailability `json:"availability,omitempty"`
+	AvailabilityMode  string                  `json:"availability_mode,omitempty"`
 	Device            DiscoveryDevice         `json:"device"`
 }
 
@@ -202,6 +203,92 @@ func buildDiscoveryPayloads(cfg config.Config, deviceID string, rawFull []byte) 
 		b, err := json.Marshal(payload)
 		if err != nil {
 			return nil, fmt.Errorf("marshal discovery payload for %s/%s: %w", id.id, e.key, err)
+		}
+		out[topic] = b
+	}
+	return out, nil
+}
+
+// gatewayEntity is one diagnostic sensor of the gateway device.
+type gatewayEntity struct {
+	key           string
+	displayName   string
+	stateTopic    func(config.Config) string
+	valueTemplate string
+	deviceClass   string
+}
+
+// noneIfEmpty maps an empty payload (a cleared value) to HA's "None", which
+// sets the sensor to unknown instead of being ignored.
+const noneIfEmpty = "{{ value if value else 'None' }}"
+
+var gatewayEntities = []gatewayEntity{
+	{
+		key:           "connection",
+		displayName:   "Connection",
+		stateTopic:    config.Config.MieleStateTopic,
+		valueTemplate: "{{ value }}",
+	},
+	{
+		key:           "next_login_required",
+		displayName:   "Next login required",
+		stateTopic:    config.Config.MieleNextLoginTopic,
+		valueTemplate: noneIfEmpty,
+		deviceClass:   "timestamp",
+	},
+	{
+		key:           "warning",
+		displayName:   "Warning",
+		stateTopic:    config.Config.MieleWarningTopic,
+		valueTemplate: noneIfEmpty,
+	},
+}
+
+// buildGatewayDiscoveryPayloads assembles the discovery configs of the
+// gateway's own HA device: its connection to Miele, when the next browser
+// login is required, and pending warnings. Returns nil when discovery is
+// disabled in cfg.
+func buildGatewayDiscoveryPayloads(cfg config.Config, swVersion string) (map[string][]byte, error) {
+	disc := cfg.MQTT.Discovery
+	if disc == nil || !disc.Enabled {
+		return nil, nil
+	}
+
+	// The base topic identifies this gateway instance.
+	node := "miele2mqtt_" + strings.NewReplacer("/", "_", "+", "_", "#", "_", " ", "_").Replace(strings.Trim(cfg.MQTT.Topic, "/"))
+	device := DiscoveryDevice{
+		Identifiers:  []string{node},
+		Manufacturer: "mqtt-home",
+		Model:        "miele-to-mqtt-gw",
+		Name:         joinNonEmpty(" ", disc.DeviceNamePrefix, "Gateway"),
+		SWVersion:    swVersion,
+		SerialNumber: cfg.MQTT.Topic,
+	}
+	var availability []DiscoveryAvailability
+	if cfg.MQTT.BridgeInfo {
+		availability = []DiscoveryAvailability{
+			{Topic: cfg.BridgeInfoTopic(), PayloadAvailable: "online", PayloadNotAvailable: "offline"},
+		}
+	}
+
+	out := make(map[string][]byte, len(gatewayEntities))
+	for _, e := range gatewayEntities {
+		uid := node + "_" + e.key
+		topic := strings.TrimRight(disc.Prefix, "/") + "/sensor/" + node + "/" + e.key + "/config"
+		payload := DiscoveryPayload{
+			Name:           e.displayName,
+			UniqueID:       uid,
+			ObjectID:       uid,
+			StateTopic:     e.stateTopic(cfg),
+			ValueTemplate:  e.valueTemplate,
+			DeviceClass:    e.deviceClass,
+			EntityCategory: "diagnostic",
+			Availability:   availability,
+			Device:         device,
+		}
+		b, err := json.Marshal(payload)
+		if err != nil {
+			return nil, fmt.Errorf("marshal gateway discovery payload for %s: %w", e.key, err)
 		}
 		out[topic] = b
 	}

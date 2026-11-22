@@ -332,6 +332,25 @@ state and only marks it unavailable on a true `disconnected`. (HA 2023.8 or
 newer respects `availability_mode: any`; older versions fall back to a single
 availability check that flips on `degraded`.)
 
+## Gateway device
+
+The bridge also announces itself as a device (`<device-name-prefix> Gateway`)
+with three diagnostic sensors:
+
+| Entity                | State topic                                   | Notes                                           |
+| --------------------- | --------------------------------------------- | ----------------------------------------------- |
+| `connection`          | `<mqtt.topic>/bridge/miele`                   | `connected`, `degraded`, `authorization-required`, … |
+| `next_login_required` | `<mqtt.topic>/bridge/miele/next-login-required` | `device_class: timestamp`; unknown when Miele does not report it |
+| `warning`             | `<mqtt.topic>/bridge/miele/warning`           | E.g. `Relogin required: Visit …`; unknown when there is none |
+
+Its discovery topics are `<prefix>/sensor/miele2mqtt_<topic>/<entity>/config`,
+where `<topic>` is `mqtt.topic` with `/` replaced by `_`, so several gateways
+on one broker stay apart. With `mqtt.bridge-info` enabled (the default), the
+entities are available while `<mqtt.topic>/bridge/state` is `online`.
+
+A Home Assistant automation on `next_login_required` or `warning` can remind
+you of the yearly relogin.
+
 ## Removal on shutdown
 
 On `SIGTERM` / `SIGINT`, the bridge publishes an empty retained payload to
