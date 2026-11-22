@@ -2,7 +2,6 @@ package login
 
 import (
 	"context"
-	"errors"
 	"sync"
 	"time"
 
@@ -22,8 +21,21 @@ type Manager struct {
 	onRefresh func(now, expiresAt time.Time)
 
 	onAuthRequired func()
-	authorize      func(ctx context.Context, cfg config.MieleConfig, c *Client) (TokenResult, error)
+	onToken        func(t Token)
+	onLoginPage    func(urls []string, relogin bool)
+	onBrowserLogin func()
+	authorize      Authorizer
+
+	sessMu sync.Mutex
+	sess   *browserSession
+
+	// installMu serializes refreshing and installing tokens between Login
+	// and a background browser login.
+	installMu sync.Mutex
 }
+
+// Authorizer runs the interactive browser login, see Authorize.
+type Authorizer func(ctx context.Context, cfg config.MieleConfig, c *Client, onReady func(urls []string)) (TokenResult, error)
 
 // NewManager builds a Manager with default Miele API clients. Tests can
 // substitute clients via the exported fields.
@@ -60,8 +72,25 @@ func (m *Manager) SetOnAuthRequired(fn func()) {
 	m.onAuthRequired = fn
 }
 
+// SetOnToken registers a callback invoked with every newly obtained token.
+func (m *Manager) SetOnToken(fn func(t Token)) {
+	m.onToken = fn
+}
+
+// SetOnLoginPage registers a callback invoked with the URLs of the login page
+// once it listens. relogin is true when the current token still works.
+func (m *Manager) SetOnLoginPage(fn func(urls []string, relogin bool)) {
+	m.onLoginPage = fn
+}
+
+// SetOnBrowserLogin registers a callback invoked after a browser login has
+// succeeded and the new token is installed.
+func (m *Manager) SetOnBrowserLogin(fn func()) {
+	m.onBrowserLogin = fn
+}
+
 // SetAuthorizer lets tests replace the interactive browser login.
-func (m *Manager) SetAuthorizer(fn func(ctx context.Context, cfg config.MieleConfig, c *Client) (TokenResult, error)) {
+func (m *Manager) SetAuthorizer(fn Authorizer) {
 	m.authorize = fn
 }
 
@@ -160,6 +189,11 @@ func (m *Manager) Login(ctx context.Context) (*Token, error) {
 	}
 
 	connected := m.assertConnection(ctx)
+
+	// Hold installMu from reading the token until the refreshed token is
+	// persisted, so a relogin completing meanwhile is neither overwritten by
+	// a refresh of the old token nor refreshed away.
+	m.installMu.Lock()
 	current := m.Current()
 
 	if current != nil && current.RefreshToken != "" && (!connected || NeedsRefresh(current, now)) {
@@ -180,26 +214,36 @@ func (m *Manager) Login(ctx context.Context) (*Token, error) {
 		}
 	}
 
-	if !connected || m.Current() == nil {
-		var res TokenResult
-		var err error
-		if authType == config.AuthTypeLegacy {
-			res, err = m.legacyLogin(ctx, cfg)
-		} else {
-			res, err = m.browserLogin(ctx, cfg)
-		}
-		if err != nil {
+	if connected && m.Current() != nil {
+		final := m.Current()
+		m.completeLogin(cfg, final)
+		m.installMu.Unlock()
+		return final, nil
+	}
+	m.installMu.Unlock()
+
+	if authType != config.AuthTypeLegacy {
+		// The browser login installs and persists the token itself.
+		if err := m.browserLogin(ctx, cfg); err != nil {
 			return nil, err
 		}
-		t := Convert(res, m.now())
-		m.SetToken(&t)
+		return m.Current(), nil
 	}
-
-	final := m.Current()
-	if final == nil {
-		return nil, errors.New("login: token is nil after login flow")
+	res, err := m.legacyLogin(ctx, cfg)
+	if err != nil {
+		return nil, err
 	}
+	t := Convert(res, m.now())
+	m.installMu.Lock()
+	defer m.installMu.Unlock()
+	m.SetToken(&t)
+	m.completeLogin(cfg, &t)
+	return &t, nil
+}
 
+// completeLogin persists a freshly obtained token (when config.miele.persistToken
+// is true) and notifies the registered callbacks.
+func (m *Manager) completeLogin(cfg config.MieleConfig, final *Token) {
 	if cfg.PersistToken {
 		tc := config.TokenConfig{
 			Access:     final.AccessToken,
@@ -215,9 +259,11 @@ func (m *Manager) Login(ctx context.Context) (*Token, error) {
 	if m.onRefresh != nil {
 		m.onRefresh(m.now(), final.ExpiresAt)
 	}
+	if m.onToken != nil {
+		m.onToken(*final)
+	}
 
 	logger.Info("Login successful")
-	return final, nil
 }
 
 // refresh runs the refresh-token grant at the provider that issued t.
@@ -241,17 +287,101 @@ func (m *Manager) legacyLogin(ctx context.Context, cfg config.MieleConfig) (Toke
 	return m.login.FetchToken(ctx, cfg, code)
 }
 
-// browserLogin runs the interactive login of the OAuth2 provider.
-func (m *Manager) browserLogin(ctx context.Context, cfg config.MieleConfig) (TokenResult, error) {
+// browserLogin runs the interactive login of the OAuth2 provider and blocks
+// until it has completed. It joins a relogin that is already running.
+func (m *Manager) browserLogin(ctx context.Context, cfg config.MieleConfig) error {
 	if m.onAuthRequired != nil {
 		m.onAuthRequired()
 	}
-	res, err := m.authorize(ctx, cfg, m.login)
-	if err != nil {
-		return TokenResult{}, err
+	s := m.startBrowserLogin(ctx, cfg, false)
+	select {
+	case <-s.done:
+		return s.err
+	case <-ctx.Done():
+		return ctx.Err()
 	}
-	logger.Info("Received OAuth2 token", "expires_in", res.ExpiresIn, "refresh_expires_in", res.RefreshExpiresIn)
-	return res, nil
+}
+
+// browserSession is one running browser login. Only one runs at a time, as
+// all of them share the login page's listen address.
+type browserSession struct {
+	done chan struct{}
+	err  error
+}
+
+// startBrowserLogin starts the login page in the background, or returns the
+// session that is already running. On success the session installs and
+// persists the new token, removes miele.enable-auth-server from the config
+// and calls the OnBrowserLogin callback; the login page is shut down either
+// way. relogin marks a login started while the current token still works.
+func (m *Manager) startBrowserLogin(ctx context.Context, cfg config.MieleConfig, relogin bool) *browserSession {
+	m.sessMu.Lock()
+	defer m.sessMu.Unlock()
+	if m.sess != nil {
+		return m.sess
+	}
+	s := &browserSession{done: make(chan struct{})}
+	m.sess = s
+
+	go func() {
+		res, err := m.authorize(ctx, cfg, m.login, func(urls []string) {
+			if m.onLoginPage != nil {
+				m.onLoginPage(urls, relogin)
+			}
+		})
+		if err == nil {
+			logger.Info("Received OAuth2 token", "expires_in", res.ExpiresIn, "refresh_expires_in", res.RefreshExpiresIn)
+			t := Convert(res, m.now())
+			// Waits for a running refresh, then replaces its result.
+			m.installMu.Lock()
+			m.SetToken(&t)
+			m.completeLogin(cfg, &t)
+			m.installMu.Unlock()
+			config.ClearEnableAuthServer()
+			if m.onBrowserLogin != nil {
+				m.onBrowserLogin()
+			}
+		} else if ctx.Err() == nil {
+			logger.Error("Browser login failed", "error", err)
+		}
+
+		m.sessMu.Lock()
+		m.sess = nil
+		m.sessMu.Unlock()
+		s.err = err
+		close(s.done)
+	}()
+	return s
+}
+
+// StartRelogin opens the login page in the background while the current
+// token stays in use. Once the user has logged in, the new token replaces the
+// current one. It does nothing when a browser login is already running, and
+// is refused for auth-type legacy.
+func (m *Manager) StartRelogin(ctx context.Context) {
+	cfg := config.Get().Miele
+	if cfg.ResolvedAuthType() != config.AuthTypeDevice {
+		logger.Warn("Relogin needs the browser login, but auth-type is " + cfg.ResolvedAuthType())
+		return
+	}
+	m.startBrowserLogin(ctx, cfg, true)
+}
+
+// LoginPageActive reports whether a browser login is running.
+func (m *Manager) LoginPageActive() bool {
+	m.sessMu.Lock()
+	defer m.sessMu.Unlock()
+	return m.sess != nil
+}
+
+// ReloginDue reports whether the refresh token expires within warn, so a new
+// browser login should be done. It is false when the expiry is unknown.
+func (m *Manager) ReloginDue(now time.Time, warn time.Duration) bool {
+	t := m.Current()
+	if t == nil || t.RefreshExpiresAt.IsZero() {
+		return false
+	}
+	return !now.Before(t.RefreshExpiresAt.Add(-warn))
 }
 
 // assertConnection mirrors lib/miele/login/login.ts:assertConnection: a

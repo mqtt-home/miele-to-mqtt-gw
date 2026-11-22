@@ -42,15 +42,16 @@ type authServer struct {
 // Authorize runs the browser login of the OAuth2 provider: it serves a login
 // page on cfg.AuthListen until the user has logged in and the authorization
 // code has been exchanged, then shuts the page down and returns the tokens.
-func Authorize(ctx context.Context, cfg config.MieleConfig, c *Client) (TokenResult, error) {
+// onReady, when not nil, receives the URLs of the login page once it listens.
+func Authorize(ctx context.Context, cfg config.MieleConfig, c *Client, onReady func(urls []string)) (TokenResult, error) {
 	ln, err := net.Listen("tcp", cfg.AuthListen)
 	if err != nil {
 		return TokenResult{}, fmt.Errorf("login page: %w", err)
 	}
-	return authorize(ctx, cfg, c, ln)
+	return authorize(ctx, cfg, c, ln, onReady)
 }
 
-func authorize(ctx context.Context, cfg config.MieleConfig, c *Client, ln net.Listener) (TokenResult, error) {
+func authorize(ctx context.Context, cfg config.MieleConfig, c *Client, ln net.Listener, onReady func(urls []string)) (TokenResult, error) {
 	s := &authServer{cfg: cfg, client: c, result: make(chan TokenResult, 1)}
 
 	mux := http.NewServeMux()
@@ -62,7 +63,11 @@ func authorize(ctx context.Context, cfg config.MieleConfig, c *Client, ln net.Li
 	serveErr := make(chan error, 1)
 	go func() { serveErr <- srv.Serve(ln) }()
 
-	logger.Info("Miele authorization required. To login, visit now: " + strings.Join(loginPageURLs(ln.Addr()), " or "))
+	urls := loginPageURLs(ln.Addr())
+	logger.Info("Miele authorization required. To login, visit now: " + strings.Join(urls, " or "))
+	if onReady != nil {
+		onReady(urls)
+	}
 	if cfg.RedirectURI != "" {
 		if p, err := s.newPending(cfg.RedirectURI); err == nil {
 			logger.Info("Or open this URL in any browser: " + c.AuthorizeURL(cfg, p.redirectURI, p.state, p.pkce.Challenge))

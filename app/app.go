@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"strings"
 	"sync"
 	"time"
 
@@ -50,6 +51,30 @@ func (a *app) start(ctx context.Context) {
 	a.mgr.SetOnAuthRequired(func() {
 		a.pub.PublishMieleState("authorization-required")
 	})
+	a.mgr.SetOnToken(func(t login.Token) {
+		a.pub.PublishNextLoginRequired(t.RefreshExpiresAt)
+	})
+	a.mgr.SetOnLoginPage(func(urls []string, relogin bool) {
+		prefix := "Login required"
+		if relogin {
+			prefix = "Relogin required"
+		}
+		a.pub.PublishWarning(prefix + ": Visit " + strings.Join(urls, " or "))
+	})
+	a.mgr.SetOnBrowserLogin(func() {
+		a.pub.PublishWarning("")
+		// Reconnect SSE with the new token; polling picks it up by itself.
+		if a.sse != nil {
+			a.sse.Close()
+		}
+	})
+
+	// Clear a warning left over from a previous run; it is published again
+	// below when a relogin is still due.
+	a.pub.PublishWarning("")
+	if t := a.mgr.Current(); t != nil {
+		a.pub.PublishNextLoginRequired(t.RefreshExpiresAt)
+	}
 
 	if a.cfg.Miele.Mode == "sse" {
 		backoff := a.cfg.Miele.SSEBackoff
@@ -83,6 +108,12 @@ func (a *app) start(ctx context.Context) {
 
 	a.startPolling(ctx)
 	a.startRefreshCheck(ctx)
+
+	if config.Get().Miele.EnableAuthServer {
+		logger.Info("miele.enable-auth-server is set. Starting the login page.")
+		a.mgr.StartRelogin(ctx)
+	}
+	a.maybeRelogin(ctx)
 }
 
 // onDevices is the single device-update path used by both SSE and polling.
@@ -173,6 +204,7 @@ func (a *app) startRefreshCheck(ctx context.Context) {
 				return
 			case <-ticker.C:
 				a.maybeRefresh(ctx)
+				a.maybeRelogin(ctx)
 			}
 		}
 	}()
@@ -190,6 +222,21 @@ func (a *app) maybeRefresh(ctx context.Context) {
 	if _, err := a.mgr.Login(ctx); err != nil {
 		logger.Error("Re-login failed", "error", err)
 	}
+}
+
+// maybeRelogin opens the login page in the background once the refresh token
+// expires within miele.relogin-warning-days. The current token stays in use
+// until the user has logged in.
+func (a *app) maybeRelogin(ctx context.Context) {
+	if a.cfg.Miele.ResolvedAuthType() != config.AuthTypeDevice || a.mgr.LoginPageActive() {
+		return
+	}
+	warn := time.Duration(a.cfg.Miele.ReloginWarningDays) * 24 * time.Hour
+	if !a.mgr.ReloginDue(time.Now(), warn) {
+		return
+	}
+	logger.Info("Refresh token expires soon. Starting the login page.", "expires_at", a.mgr.Current().RefreshExpiresAt)
+	a.mgr.StartRelogin(ctx)
 }
 
 // pollingHealthy reports whether the polling loop has had at least one
@@ -221,6 +268,8 @@ func (a *app) stop() {
 	// Clear retained HA discovery topics before the final state publish so HA
 	// removes the device from its registry on graceful shutdown.
 	a.pub.CleanupDiscovery()
+	// The login page closes with the process, so its warning is stale.
+	a.pub.PublishWarning("")
 	// Publish a final disconnected state so subscribers see a clean transition.
 	mqtt.PublishAbsolute(a.cfg.MieleStateTopic(), "disconnected", a.cfg.MQTT.Retain)
 }

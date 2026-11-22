@@ -227,7 +227,7 @@ func TestLogin_RefreshRouteByTokenFormat(t *testing.T) {
 			m := NewManager()
 			m.SetClients(lc, apiC)
 			m.SetNowFunc(func() time.Time { return now })
-			m.SetAuthorizer(func(context.Context, config.MieleConfig, *Client) (TokenResult, error) {
+			m.SetAuthorizer(func(context.Context, config.MieleConfig, *Client, func([]string)) (TokenResult, error) {
 				t.Fatal("browser login must not be started")
 				return TokenResult{}, nil
 			})
@@ -256,7 +256,7 @@ func TestLogin_DeviceMode_RefreshFailureStartsBrowserLogin(t *testing.T) {
 	m.SetNowFunc(func() time.Time { return now })
 	authRequired := 0
 	m.SetOnAuthRequired(func() { authRequired++ })
-	m.SetAuthorizer(func(context.Context, config.MieleConfig, *Client) (TokenResult, error) {
+	m.SetAuthorizer(func(context.Context, config.MieleConfig, *Client, func([]string)) (TokenResult, error) {
 		return TokenResult{AccessToken: "browser", RefreshToken: "r", ExpiresIn: 300}, nil
 	})
 	m.SetToken(&Token{AccessToken: fakeJWT(now.Unix()), RefreshToken: "r", ExpiresAt: now})
@@ -282,7 +282,7 @@ func TestLogin_ExplicitDeviceDiscardsLegacyToken(t *testing.T) {
 	m.SetClients(lc, apiC)
 	m.SetNowFunc(func() time.Time { return now })
 	browser := 0
-	m.SetAuthorizer(func(context.Context, config.MieleConfig, *Client) (TokenResult, error) {
+	m.SetAuthorizer(func(context.Context, config.MieleConfig, *Client, func([]string)) (TokenResult, error) {
 		browser++
 		return TokenResult{AccessToken: "browser", RefreshToken: "r", ExpiresIn: 300}, nil
 	})
@@ -309,7 +309,7 @@ func TestLogin_DerivedDeviceKeepsRefreshingLegacyToken(t *testing.T) {
 	m := NewManager()
 	m.SetClients(lc, apiC)
 	m.SetNowFunc(func() time.Time { return now })
-	m.SetAuthorizer(func(context.Context, config.MieleConfig, *Client) (TokenResult, error) {
+	m.SetAuthorizer(func(context.Context, config.MieleConfig, *Client, func([]string)) (TokenResult, error) {
 		t.Fatal("browser login must not be started")
 		return TokenResult{}, nil
 	})
@@ -338,7 +338,7 @@ func startAuthPage(t *testing.T, cfg config.MieleConfig, lc *Client) (string, <-
 	resCh := make(chan TokenResult, 1)
 	errCh := make(chan error, 1)
 	go func() {
-		res, err := authorize(ctx, cfg, lc, ln)
+		res, err := authorize(ctx, cfg, lc, ln, nil)
 		if err != nil {
 			errCh <- err
 			return
@@ -532,5 +532,203 @@ func TestParsePastedCode(t *testing.T) {
 		if code != c.code || state != c.state {
 			t.Errorf("parsePastedCode(%q) = %q, %q; want %q, %q", c.in, code, state, c.code, c.state)
 		}
+	}
+}
+
+// --- relogin ---
+
+func TestStartRelogin_KeepsTokenUntilLoginSucceeds(t *testing.T) {
+	now := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
+	loadTestConfig(t, `{"client-id": "cid", "client-secret": "csec", "persistToken": true, "enable-auth-server": true}`)
+
+	m := NewManager()
+	m.SetNowFunc(func() time.Time { return now })
+	release := make(chan struct{})
+	m.SetAuthorizer(func(ctx context.Context, _ config.MieleConfig, _ *Client, onReady func([]string)) (TokenResult, error) {
+		onReady([]string{"http://localhost:6061/"})
+		<-release
+		return TokenResult{AccessToken: "new", RefreshToken: "new-r", ExpiresIn: 3600, RefreshExpiresIn: 86400}, nil
+	})
+	var pageURLs []string
+	var pageRelogin bool
+	m.SetOnLoginPage(func(urls []string, relogin bool) { pageURLs, pageRelogin = urls, relogin })
+	browserDone := make(chan struct{})
+	m.SetOnBrowserLogin(func() { close(browserDone) })
+	m.SetToken(&Token{AccessToken: "old", RefreshToken: "old-r", ExpiresAt: now.Add(time.Hour)})
+
+	m.StartRelogin(context.Background())
+	if !m.LoginPageActive() {
+		t.Fatal("login page not active")
+	}
+	if got := m.CurrentAccessToken(); got != "old" {
+		t.Errorf("token during relogin = %q, want old", got)
+	}
+
+	close(release)
+	select {
+	case <-browserDone:
+	case <-time.After(5 * time.Second):
+		t.Fatal("browser login did not complete")
+	}
+	if got := m.CurrentAccessToken(); got != "new" {
+		t.Errorf("token after relogin = %q, want new", got)
+	}
+	if len(pageURLs) != 1 || !pageRelogin {
+		t.Errorf("login page callback: urls = %v, relogin = %v", pageURLs, pageRelogin)
+	}
+
+	raw, err := os.ReadFile(config.Path())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(string(raw), "enable-auth-server") {
+		t.Errorf("enable-auth-server not removed: %s", raw)
+	}
+	if !strings.Contains(string(raw), `"refreshValidUntil": "2026-01-02T00:00:00Z"`) {
+		t.Errorf("new token not persisted: %s", raw)
+	}
+	if config.Get().Miele.EnableAuthServer {
+		t.Error("enable-auth-server still set in memory")
+	}
+}
+
+func TestStartRelogin_FailureKeepsToken(t *testing.T) {
+	loadTestConfig(t, `{"client-id": "cid", "client-secret": "csec", "persistToken": false}`)
+
+	m := NewManager()
+	failed := make(chan struct{})
+	m.SetAuthorizer(func(context.Context, config.MieleConfig, *Client, func([]string)) (TokenResult, error) {
+		defer close(failed)
+		return TokenResult{}, fmt.Errorf("port in use")
+	})
+	m.SetOnBrowserLogin(func() { t.Error("OnBrowserLogin must not be called") })
+	m.SetToken(&Token{AccessToken: "old", RefreshToken: "old-r"})
+
+	m.StartRelogin(context.Background())
+	<-failed
+	for i := 0; m.LoginPageActive() && i < 100; i++ {
+		time.Sleep(10 * time.Millisecond)
+	}
+	if m.LoginPageActive() {
+		t.Error("login page still active after failure")
+	}
+	if got := m.CurrentAccessToken(); got != "old" {
+		t.Errorf("token = %q, want old", got)
+	}
+}
+
+func TestLogin_JoinsRunningRelogin(t *testing.T) {
+	now := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
+	legacy := &tokenRecorder{}
+	oauth2 := &tokenRecorder{} // refresh refused
+	lc, apiC := stubBoth(t, legacy, oauth2, nil)
+	loadTestConfig(t, `{"client-id": "cid", "client-secret": "csec", "persistToken": false}`)
+
+	m := NewManager()
+	m.SetClients(lc, apiC)
+	m.SetNowFunc(func() time.Time { return now })
+	var calls int
+	var mu sync.Mutex
+	release := make(chan struct{})
+	m.SetAuthorizer(func(context.Context, config.MieleConfig, *Client, func([]string)) (TokenResult, error) {
+		mu.Lock()
+		calls++
+		mu.Unlock()
+		<-release
+		return TokenResult{AccessToken: "browser", RefreshToken: "r", ExpiresIn: 300}, nil
+	})
+	m.SetToken(&Token{AccessToken: fakeJWT(now.Unix()), RefreshToken: "r", ExpiresAt: now})
+
+	m.StartRelogin(context.Background())
+	go func() {
+		time.Sleep(50 * time.Millisecond)
+		close(release)
+	}()
+	tok, err := m.Login(context.Background())
+	if err != nil {
+		t.Fatalf("Login: %v", err)
+	}
+	mu.Lock()
+	defer mu.Unlock()
+	if tok.AccessToken != "browser" || calls != 1 {
+		t.Errorf("token = %q, authorizer calls = %d, want browser and 1", tok.AccessToken, calls)
+	}
+}
+
+func TestReloginDue(t *testing.T) {
+	now := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
+	warn := 14 * 24 * time.Hour
+	cases := []struct {
+		name string
+		exp  time.Time
+		want bool
+	}{
+		{"unknown expiry", time.Time{}, false},
+		{"expires in 15 days", now.Add(15 * 24 * time.Hour), false},
+		{"expires in 14 days", now.Add(warn), true},
+		{"expires in 1 day", now.Add(24 * time.Hour), true},
+		{"expired", now.Add(-time.Hour), true},
+	}
+	for _, c := range cases {
+		m := NewManager()
+		m.SetToken(&Token{AccessToken: "a", RefreshExpiresAt: c.exp})
+		if got := m.ReloginDue(now, warn); got != c.want {
+			t.Errorf("%s: ReloginDue = %v, want %v", c.name, got, c.want)
+		}
+	}
+	if NewManager().ReloginDue(now, warn) {
+		t.Error("no token: ReloginDue = true")
+	}
+}
+
+func TestRelogin_CompletingDuringRefreshWins(t *testing.T) {
+	now := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
+	refreshStarted := make(chan struct{})
+	releaseRefresh := make(chan struct{})
+	mux := http.NewServeMux()
+	mux.HandleFunc("/oidc/token", func(w http.ResponseWriter, _ *http.Request) {
+		close(refreshStarted)
+		<-releaseRefresh
+		w.Write([]byte(`{"access_token":"refreshed","refresh_token":"old-r2","expires_in":3600}`))
+	})
+	mux.HandleFunc("/v1/devices/", func(w http.ResponseWriter, _ *http.Request) { w.Write([]byte(`{}`)) })
+	srv := httptest.NewServer(mux)
+	t.Cleanup(srv.Close)
+	lc := NewClient()
+	lc.AuthBaseURL = srv.URL + "/oidc"
+	loadTestConfig(t, `{"client-id": "cid", "client-secret": "csec", "persistToken": false}`)
+
+	m := NewManager()
+	m.SetClients(lc, &api.Client{HTTP: srv.Client(), BaseURL: srv.URL})
+	m.SetNowFunc(func() time.Time { return now })
+	m.SetAuthorizer(func(context.Context, config.MieleConfig, *Client, func([]string)) (TokenResult, error) {
+		<-refreshStarted
+		return TokenResult{AccessToken: "browser", RefreshToken: "new-r", ExpiresIn: 3600}, nil
+	})
+	browserDone := make(chan struct{})
+	m.SetOnBrowserLogin(func() { close(browserDone) })
+	// Expires within the refresh threshold, so Login refreshes it.
+	m.SetToken(&Token{AccessToken: fakeJWT(now.Unix()), RefreshToken: "old-r", ExpiresAt: now.Add(time.Minute)})
+
+	loginDone := make(chan struct{})
+	go func() {
+		defer close(loginDone)
+		if _, err := m.Login(context.Background()); err != nil {
+			t.Errorf("Login: %v", err)
+		}
+	}()
+	<-refreshStarted
+	m.StartRelogin(context.Background())
+	// The relogin has its token but must wait for the running refresh.
+	time.Sleep(50 * time.Millisecond)
+	close(releaseRefresh)
+	<-loginDone
+	select {
+	case <-browserDone:
+	case <-time.After(5 * time.Second):
+		t.Fatal("browser login did not complete")
+	}
+	if got := m.CurrentAccessToken(); got != "browser" {
+		t.Errorf("token = %q, want browser (relogin must not be overwritten by the refresh)", got)
 	}
 }

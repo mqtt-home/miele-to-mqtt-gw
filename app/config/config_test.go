@@ -485,6 +485,57 @@ func TestApplyDefaults_AuthDefaults(t *testing.T) {
 	if c.Miele.RedirectURI != "" {
 		t.Errorf("RedirectURI = %q, want empty (derived from request)", c.Miele.RedirectURI)
 	}
+	if c.Miele.ReloginWarningDays != 14 {
+		t.Errorf("ReloginWarningDays = %d, want 14", c.Miele.ReloginWarningDays)
+	}
+}
+
+func TestClearEnableAuthServer(t *testing.T) {
+	p := filepath.Join(t.TempDir(), "config.json")
+	body := `{
+        "mqtt": {"url": "tcp://localhost:1883", "topic": "miele"},
+        "miele": {"client-id": "cid", "enable-auth-server": true, "persistToken": false}
+    }`
+	if err := os.WriteFile(p, []byte(body), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	c, err := LoadConfig(p)
+	if err != nil {
+		t.Fatalf("LoadConfig: %v", err)
+	}
+	if !c.Miele.EnableAuthServer {
+		t.Fatal("enable-auth-server not parsed")
+	}
+
+	ClearEnableAuthServer()
+
+	out, _ := os.ReadFile(p)
+	if strings.Contains(string(out), "enable-auth-server") {
+		t.Errorf("flag still in file: %s", out)
+	}
+	if !strings.Contains(string(out), `"client-id": "cid"`) {
+		t.Errorf("other settings lost: %s", out)
+	}
+	if Get().Miele.EnableAuthServer {
+		t.Error("flag still set in memory")
+	}
+}
+
+func TestClearEnableAuthServer_NoOpWhenUnset(t *testing.T) {
+	p := filepath.Join(t.TempDir(), "config.json")
+	body := `{"mqtt": {"url": "tcp://localhost:1883", "topic": "miele"}, "miele": {"client-id": "cid"}}`
+	if err := os.WriteFile(p, []byte(body), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := LoadConfig(p); err != nil {
+		t.Fatalf("LoadConfig: %v", err)
+	}
+
+	ClearEnableAuthServer()
+
+	if out, _ := os.ReadFile(p); string(out) != body {
+		t.Errorf("file rewritten: %s", out)
+	}
 }
 
 func TestResolvedAuthType(t *testing.T) {
