@@ -5,6 +5,8 @@ services:
     hostname: mielemqtt
     image: pharndt/mielemqtt:${VERSION}
     build: ./app
+    ports:
+      - "6061:6061" # temporary Miele login page
     volumes:
       - ./production/config:/var/lib/miele-to-mqtt-gw:ro
     restart: "no"

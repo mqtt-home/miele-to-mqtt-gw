@@ -38,7 +38,92 @@ See [fullmessage-example](fullmessage-example.md)
 
 ## Example configuration
 
-### With username/password
+### With browser login (Miele OAuth2 with device-specific permissions)
+
+Miele's [new OAuth2 provider](https://developer.miele.com/docs/authorization) replaces the legacy
+username/password login. The user logs in once in a browser and selects which appliances the
+gateway may access. No username/password is stored in the configuration.
+
+```json
+{
+  "mqtt": {
+    "url": "tcp://192.168.2.2:1883",
+    "client-id": "miele-mqtt-gw",
+    "username": "username",
+    "password": "password",
+    "retain": true,
+
+    "topic": "home/miele",
+    "deduplicate": true
+  },
+
+  "miele": {
+    "client-id": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+    "client-secret": "12345678901234567890123456789012",
+    "auth-type": "per-device",
+    "mode": "sse"
+  }
+}
+```
+
+When a login is required, the gateway opens a temporary login page on port 6061 and logs:
+
+```
+Miele authorization required. To login, visit now: http://localhost:6061/ or http://192.168.2.10:6061/
+```
+
+1. Open the page in any browser. A very simple web page opens.
+2. Follow "Login with Miele", log in and grant access to your appliances.
+3. Miele redirects back to the page, the gateway fetches its token and closes the page.
+
+If the redirect cannot reach the gateway (e.g. you logged in on another computer via `localhost`),
+copy the URL you were redirected to from the browser's address bar and paste it into the form
+on the login page.
+
+The redirect URI sent to Miele is derived from the URL you used to open the page
+(`http://<host>:6061/callback`). It must be allowed for your client at Miele. Use one
+fixed host name, or set `redirect-uri` explicitly.
+
+| Option         | Default                      | Description                                                                                          |
+|----------------|------------------------------|------------------------------------------------------------------------------------------------------|
+| `auth-type`    | derived                      | `legacy` or `per-device`. If unset: `legacy` when `username` and `password` are set, `per-device` otherwise |
+| `auth-listen`  | `:6061`                      | Bind address of the temporary login page                                                             |
+| `redirect-uri` | derived from the request     | Fixed redirect URI, e.g. when the page sits behind a reverse proxy                                   |
+| `scope`        | `openid mcs_thirdparty_read` | Requested OAuth2 scopes                                                                              |
+| `relogin-warning-days` | `14`                 | Days before the refresh token expires at which the login page opens for a relogin                    |
+| `enable-auth-server` | `false`                | Open the login page at startup although a working token exists. Removed after a successful login     |
+
+Access tokens of the new provider currently expire within about 60 minutes. The gateway refreshes
+them automatically with the refresh token about five minutes before they expire, so no new
+browser login is needed for that. A new browser login is only required once the refresh token
+expires, which is currently about one year after the initial login. Refreshing does not extend
+this period, so plan for a new browser login about once a year. The gateway publishes that time
+on `<topic>/bridge/miele/next-login-required`. With `persistToken` enabled, it also stores it as
+`refreshValidUntil` next to the token in the config file (`miele.token.refreshValidUntil`, UTC).
+
+When running in Docker, publish port 6061 (`-p 6061:6061`). The page only listens while a login
+is pending and closes after a successful login. During a login at runtime (e.g. after the refresh
+token expired), the `<topic>/bridge/miele` state is `authorization-required`.
+
+#### Relogin before the refresh token expires
+
+`relogin-warning-days` (default 14) before the refresh token expires, the gateway opens the login
+page again and publishes on `<topic>/bridge/miele/warning`:
+
+```
+Relogin required: Visit http://localhost:6061/ or http://192.168.2.10:6061/
+```
+
+The gateway keeps working with the current token meanwhile. Only when the browser login has
+succeeded, the new tokens replace the old ones, the gateway reconnects, the warning is cleared and
+the login page closes. If you do not log in in time, the gateway falls back to the regular login
+once the refresh token has expired.
+
+To log in again at any other time, e.g. to grant access to a new appliance, set
+`"enable-auth-server": true` in the `miele` section and restart the gateway. It opens the login page
+the same way and removes the setting from the config file after the login succeeded.
+
+### With username/password (Legacy OAuth)
 
 ```json
 {
@@ -64,6 +149,13 @@ See [fullmessage-example](fullmessage-example.md)
   }
 }
 ```
+
+Stored tokens are refreshed at the provider that issued them. Legacy tokens (country prefix plus
+32 hex digits, e.g. `DE_…`) use the legacy endpoint, all others the new provider. With `auth-type`
+unset and no username/password, an existing legacy token keeps working until it can no longer be
+refreshed, then the browser login starts. With `auth-type: per-device`, a stored legacy token is
+discarded right away.
+
 
 ### With access token
 ```json
@@ -112,7 +204,7 @@ When `deduplicate` is set to `true`, no duplicate MQTT messages will be sent.
 
 # Bridge status
 
-The bridge maintains two status topics:
+The bridge maintains these status topics:
 
 ## Topic: `.../bridge/state`
 
@@ -129,6 +221,17 @@ The bridge maintains two status topics:
 | `connected`    | Miele API is connected (SSE healthy)                                              |
 | `disconnected` | Miele API is not connected (brief failure below backoff threshold)                |
 | `degraded`     | SSE has been failing but polling is still delivering device updates               |
+| `authorization-required` | No working token; waiting for the browser login                         |
+
+## Topic: `.../bridge/miele/next-login-required`
+
+When the refresh token expires and a new browser login is required (RFC 3339, UTC, e.g.
+`2027-11-21T21:33:12Z`). Empty when the provider does not report the expiry.
+
+## Topic: `.../bridge/miele/warning`
+
+A message for the user, e.g. `Relogin required: Visit http://localhost:6061/`. Empty when there is
+nothing to do.
 
 ### SSE failure backoff
 
@@ -228,6 +331,25 @@ Each entity uses `availability_mode: any` with two entries against
 state and only marks it unavailable on a true `disconnected`. (HA 2023.8 or
 newer respects `availability_mode: any`; older versions fall back to a single
 availability check that flips on `degraded`.)
+
+## Gateway device
+
+The bridge also announces itself as a device (`<device-name-prefix> Gateway`)
+with three diagnostic sensors:
+
+| Entity                | State topic                                   | Notes                                           |
+| --------------------- | --------------------------------------------- | ----------------------------------------------- |
+| `connection`          | `<mqtt.topic>/bridge/miele`                   | `connected`, `degraded`, `authorization-required`, … |
+| `next_login_required` | `<mqtt.topic>/bridge/miele/next-login-required` | `device_class: timestamp`; unknown when Miele does not report it |
+| `warning`             | `<mqtt.topic>/bridge/miele/warning`           | E.g. `Relogin required: Visit …`; unknown when there is none |
+
+Its discovery topics are `<prefix>/sensor/miele2mqtt_<topic>/<entity>/config`,
+where `<topic>` is `mqtt.topic` with `/` replaced by `_`, so several gateways
+on one broker stay apart. With `mqtt.bridge-info` enabled (the default), the
+entities are available while `<mqtt.topic>/bridge/state` is `online`.
+
+A Home Assistant automation on `next_login_required` or `warning` can remind
+you of the yearly relogin.
 
 ## Removal on shutdown
 

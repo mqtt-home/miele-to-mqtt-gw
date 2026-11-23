@@ -401,7 +401,7 @@ func TestPersistToken_WritesWhenChanged(t *testing.T) {
 	if _, err := LoadConfig(p); err != nil {
 		t.Fatalf("LoadConfig: %v", err)
 	}
-	PersistToken(TokenConfig{Access: "a", Refresh: "r", ValidUntil: "2030-01-01T00:00:00Z"})
+	PersistToken(TokenConfig{Access: "a", Refresh: "r", ValidUntil: "2030-01-01T00:00:00Z", RefreshValidUntil: "2030-01-31T00:00:00Z"})
 
 	out, err := os.ReadFile(p)
 	if err != nil {
@@ -419,7 +419,7 @@ func TestPersistToken_WritesWhenChanged(t *testing.T) {
 	if !ok {
 		t.Fatal("token missing")
 	}
-	if tok["access"] != "a" || tok["refresh"] != "r" || tok["validUntil"] != "2030-01-01T00:00:00Z" {
+	if tok["access"] != "a" || tok["refresh"] != "r" || tok["validUntil"] != "2030-01-01T00:00:00Z" || tok["refreshValidUntil"] != "2030-01-31T00:00:00Z" {
 		t.Errorf("token = %#v", tok)
 	}
 }
@@ -470,5 +470,119 @@ func TestPersistToken_NoOpWhenPersistDisabled(t *testing.T) {
 	out, _ := os.ReadFile(p)
 	if strings.Contains(string(out), `"token"`) {
 		t.Errorf("token should not have been persisted, file = %s", string(out))
+	}
+}
+
+func TestApplyDefaults_AuthDefaults(t *testing.T) {
+	c := Config{}
+	ApplyDefaults(&c)
+	if c.Miele.AuthListen != ":6061" {
+		t.Errorf("AuthListen = %q, want :6061", c.Miele.AuthListen)
+	}
+	if c.Miele.Scope != "openid mcs_thirdparty_read" {
+		t.Errorf("Scope = %q", c.Miele.Scope)
+	}
+	if c.Miele.RedirectURI != "" {
+		t.Errorf("RedirectURI = %q, want empty (derived from request)", c.Miele.RedirectURI)
+	}
+	if c.Miele.ReloginWarningDays != 14 {
+		t.Errorf("ReloginWarningDays = %d, want 14", c.Miele.ReloginWarningDays)
+	}
+}
+
+func TestClearEnableAuthServer(t *testing.T) {
+	p := filepath.Join(t.TempDir(), "config.json")
+	body := `{
+        "mqtt": {"url": "tcp://localhost:1883", "topic": "miele"},
+        "miele": {"client-id": "cid", "enable-auth-server": true, "persistToken": false}
+    }`
+	if err := os.WriteFile(p, []byte(body), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	c, err := LoadConfig(p)
+	if err != nil {
+		t.Fatalf("LoadConfig: %v", err)
+	}
+	if !c.Miele.EnableAuthServer {
+		t.Fatal("enable-auth-server not parsed")
+	}
+
+	ClearEnableAuthServer()
+
+	out, _ := os.ReadFile(p)
+	if strings.Contains(string(out), "enable-auth-server") {
+		t.Errorf("flag still in file: %s", out)
+	}
+	if !strings.Contains(string(out), `"client-id": "cid"`) {
+		t.Errorf("other settings lost: %s", out)
+	}
+	if Get().Miele.EnableAuthServer {
+		t.Error("flag still set in memory")
+	}
+}
+
+func TestClearEnableAuthServer_NoOpWhenUnset(t *testing.T) {
+	p := filepath.Join(t.TempDir(), "config.json")
+	body := `{"mqtt": {"url": "tcp://localhost:1883", "topic": "miele"}, "miele": {"client-id": "cid"}}`
+	if err := os.WriteFile(p, []byte(body), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := LoadConfig(p); err != nil {
+		t.Fatalf("LoadConfig: %v", err)
+	}
+
+	ClearEnableAuthServer()
+
+	if out, _ := os.ReadFile(p); string(out) != body {
+		t.Errorf("file rewritten: %s", out)
+	}
+}
+
+func TestResolvedAuthType(t *testing.T) {
+	cases := []struct {
+		name string
+		m    MieleConfig
+		want string
+	}{
+		{"credentials derive legacy", MieleConfig{Username: "u", Password: "p"}, AuthTypeLegacy},
+		{"no credentials derive per-device", MieleConfig{}, AuthTypeDevice},
+		{"username only derives per-device", MieleConfig{Username: "u"}, AuthTypeDevice},
+		{"explicit per-device wins over credentials", MieleConfig{AuthType: AuthTypeDevice, Username: "u", Password: "p"}, AuthTypeDevice},
+		{"explicit legacy", MieleConfig{AuthType: AuthTypeLegacy, Username: "u", Password: "p"}, AuthTypeLegacy},
+	}
+	for _, c := range cases {
+		if got := c.m.ResolvedAuthType(); got != c.want {
+			t.Errorf("%s: ResolvedAuthType = %q, want %q", c.name, got, c.want)
+		}
+	}
+}
+
+func TestLoadConfig_AuthTypeValidation(t *testing.T) {
+	cases := []struct {
+		name    string
+		miele   string
+		wantErr string
+	}{
+		{"unknown auth-type", `{"auth-type": "magic"}`, "unknown value"},
+		{"legacy without credentials", `{"auth-type": "legacy"}`, "requires miele.username"},
+		{"per-device without credentials", `{"auth-type": "per-device"}`, ""},
+		{"legacy with credentials", `{"auth-type": "legacy", "username": "u", "password": "p"}`, ""},
+	}
+	for _, c := range cases {
+		p := filepath.Join(t.TempDir(), "config.json")
+		body := `{"mqtt": {"url": "tcp://localhost:1883", "topic": "miele"}, "miele": ` + c.miele + `}`
+		if err := os.WriteFile(p, []byte(body), 0o600); err != nil {
+			t.Fatal(err)
+		}
+		_, err := LoadConfig(p)
+		if c.wantErr == "" {
+			if err != nil {
+				t.Errorf("%s: unexpected error %v", c.name, err)
+			}
+			continue
+		}
+		if err == nil || !strings.Contains(err.Error(), c.wantErr) {
+			t.Errorf("%s: error = %v, want containing %q", c.name, err, c.wantErr)
+		}
 	}
 }

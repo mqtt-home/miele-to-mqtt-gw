@@ -4,6 +4,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"sync"
+	"time"
 
 	"github.com/mqtt-home/miele-to-mqtt-gw/config"
 	"github.com/mqtt-home/miele-to-mqtt-gw/miele/transform"
@@ -73,9 +74,21 @@ func (p *Publisher) publishDiscovery(deviceID string, rawFull []byte) {
 		logger.Warn("build discovery payloads", "device", deviceID, "error", err)
 		return
 	}
-	if len(payloads) == 0 {
+	p.publishDiscoveryPayloads(payloads)
+}
+
+// PublishGatewayDiscovery announces the gateway's own HA device with its
+// diagnostic sensors. No-op when discovery is disabled in config.
+func (p *Publisher) PublishGatewayDiscovery(swVersion string) {
+	payloads, err := buildGatewayDiscoveryPayloads(p.cfg, swVersion)
+	if err != nil {
+		logger.Warn("build gateway discovery payloads", "error", err)
 		return
 	}
+	p.publishDiscoveryPayloads(payloads)
+}
+
+func (p *Publisher) publishDiscoveryPayloads(payloads map[string][]byte) {
 	for topic, body := range payloads {
 		p.mu.Lock()
 		p.discoveredTopics[topic] = struct{}{}
@@ -115,7 +128,7 @@ func (p *Publisher) publishWithDedup(topic string, payload []byte) {
 		}
 	}
 
-	mqtt.PublishAbsolute(topic, string(payload), p.cfg.MQTT.Retain)
+	publishAbsolute(topic, string(payload), p.cfg.MQTT.Retain)
 }
 
 // PublishMieleState updates `<topic>/bridge/miele` to one of "unknown",
@@ -130,6 +143,26 @@ func (p *Publisher) PublishMieleState(state string) {
 	}
 	logger.Info("Miele connection state", "state", state)
 	mqtt.PublishAbsolute(p.cfg.MieleStateTopic(), state, p.cfg.MQTT.Retain)
+}
+
+// PublishNextLoginRequired updates `<topic>/bridge/miele/next-login-required`
+// to the refresh token's expiry (RFC 3339, UTC). A zero time (expiry unknown)
+// clears the retained value.
+func (p *Publisher) PublishNextLoginRequired(t time.Time) {
+	payload := ""
+	if !t.IsZero() {
+		payload = t.UTC().Format(time.RFC3339)
+	}
+	publishAbsolute(p.cfg.MieleNextLoginTopic(), payload, p.cfg.MQTT.Retain)
+}
+
+// PublishWarning updates `<topic>/bridge/miele/warning`. An empty message
+// clears the retained warning.
+func (p *Publisher) PublishWarning(msg string) {
+	if msg != "" {
+		logger.Warn(msg)
+	}
+	publishAbsolute(p.cfg.MieleWarningTopic(), msg, p.cfg.MQTT.Retain)
 }
 
 func hashPayload(b []byte) string {

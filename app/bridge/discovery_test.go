@@ -202,3 +202,60 @@ func pickAny(m map[string][]byte) []byte {
 	}
 	return nil
 }
+
+func TestBuildGatewayDiscoveryPayloads(t *testing.T) {
+	cfg := discoveryCfg()
+	cfg.MQTT.BridgeInfo = true
+	got, err := buildGatewayDiscoveryPayloads(cfg, "1.2.3")
+	if err != nil {
+		t.Fatalf("buildGatewayDiscoveryPayloads: %v", err)
+	}
+	want := map[string]struct{ stateTopic, deviceClass string }{
+		"homeassistant/sensor/miele2mqtt_home_miele/connection/config":          {"home/miele/bridge/miele", ""},
+		"homeassistant/sensor/miele2mqtt_home_miele/next_login_required/config": {"home/miele/bridge/miele/next-login-required", "timestamp"},
+		"homeassistant/sensor/miele2mqtt_home_miele/warning/config":             {"home/miele/bridge/miele/warning", ""},
+	}
+	if len(got) != len(want) {
+		t.Fatalf("got topics %v", keys(got))
+	}
+	for topic, w := range want {
+		raw, ok := got[topic]
+		if !ok {
+			t.Errorf("missing topic %q; got %v", topic, keys(got))
+			continue
+		}
+		var p DiscoveryPayload
+		if err := json.Unmarshal(raw, &p); err != nil {
+			t.Fatal(err)
+		}
+		if p.StateTopic != w.stateTopic || p.DeviceClass != w.deviceClass || p.EntityCategory != "diagnostic" {
+			t.Errorf("%s: state_topic = %q, device_class = %q, entity_category = %q", topic, p.StateTopic, p.DeviceClass, p.EntityCategory)
+		}
+		if p.Device.Identifiers[0] != "miele2mqtt_home_miele" || p.Device.Name != "Miele Gateway" || p.Device.SWVersion != "1.2.3" {
+			t.Errorf("%s: device = %+v", topic, p.Device)
+		}
+		if len(p.Availability) != 1 || p.Availability[0].Topic != "home/miele/bridge/state" || p.Availability[0].PayloadAvailable != "online" {
+			t.Errorf("%s: availability = %+v", topic, p.Availability)
+		}
+	}
+}
+
+func TestBuildGatewayDiscoveryPayloads_NoBridgeInfoOmitsAvailability(t *testing.T) {
+	got, err := buildGatewayDiscoveryPayloads(discoveryCfg(), "dev")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for topic, raw := range got {
+		if strings.Contains(string(raw), "availability") {
+			t.Errorf("%s: unexpected availability: %s", topic, raw)
+		}
+	}
+}
+
+func TestBuildGatewayDiscoveryPayloads_DisabledReturnsNil(t *testing.T) {
+	cfg := discoveryCfg()
+	cfg.MQTT.Discovery.Enabled = false
+	if got, _ := buildGatewayDiscoveryPayloads(cfg, "dev"); got != nil {
+		t.Errorf("got %v, want nil", keys(got))
+	}
+}

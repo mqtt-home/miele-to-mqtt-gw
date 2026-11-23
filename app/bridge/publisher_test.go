@@ -3,6 +3,7 @@ package bridge
 import (
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/mqtt-home/miele-to-mqtt-gw/config"
 )
@@ -195,5 +196,54 @@ func TestPublisher_CleanupDiscoveryEmptySetIsNoOp(t *testing.T) {
 
 	if len(rec.calls) != 0 {
 		t.Errorf("expected no publishes for empty set, got %+v", rec.calls)
+	}
+}
+
+func TestPublisher_NextLoginRequired(t *testing.T) {
+	rec := withStubPublish(t)
+	p := New(discoveryEnabledCfg())
+
+	p.PublishNextLoginRequired(time.Date(2027, 11, 21, 22, 33, 12, 0, time.FixedZone("CET", 3600)))
+	p.PublishNextLoginRequired(time.Time{})
+
+	want := []publishCall{
+		{topic: "home/miele/bridge/miele/next-login-required", payload: "2027-11-21T21:33:12Z", retained: true},
+		{topic: "home/miele/bridge/miele/next-login-required", payload: "", retained: true},
+	}
+	if len(rec.calls) != len(want) {
+		t.Fatalf("calls = %+v", rec.calls)
+	}
+	for i, w := range want {
+		if rec.calls[i] != w {
+			t.Errorf("call %d = %+v, want %+v", i, rec.calls[i], w)
+		}
+	}
+}
+
+func TestPublisher_Warning(t *testing.T) {
+	rec := withStubPublish(t)
+	p := New(discoveryEnabledCfg())
+
+	p.PublishWarning("Relogin required: Visit http://localhost:6061/")
+	p.PublishWarning("")
+
+	if len(rec.calls) != 2 ||
+		rec.calls[0].topic != "home/miele/bridge/miele/warning" ||
+		rec.calls[0].payload != "Relogin required: Visit http://localhost:6061/" ||
+		rec.calls[1].payload != "" || !rec.calls[1].retained {
+		t.Errorf("calls = %+v", rec.calls)
+	}
+}
+
+func TestPublisher_GatewayDiscoveryIsCleanedUp(t *testing.T) {
+	rec := withStubPublish(t)
+	p := New(discoveryEnabledCfg())
+
+	p.PublishGatewayDiscovery("dev")
+	rec.calls = nil
+	p.CleanupDiscovery()
+
+	if len(rec.calls) != len(gatewayEntities) {
+		t.Errorf("cleanup calls = %+v, want %d", rec.calls, len(gatewayEntities))
 	}
 }

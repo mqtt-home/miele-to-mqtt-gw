@@ -6,6 +6,8 @@ services:
             TZ: "Europe/Berlin"
         hostname: mielemqtt
         image: pharndt/mielemqtt
+        ports:
+            - "6061:6061" # temporary Miele login page
         volumes:
             - ./config:/var/lib/miele-to-mqtt-gw:rw
         restart: always

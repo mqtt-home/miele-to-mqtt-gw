@@ -109,6 +109,55 @@ func TestFetchCode_MissingLocation(t *testing.T) {
 	}
 }
 
+func TestFetchCode_ConsentPage(t *testing.T) {
+	_, lc, _ := stubMiele(t, struct {
+		code    http.HandlerFunc
+		token   http.HandlerFunc
+		devices http.HandlerFunc
+	}{
+		code: func(w http.ResponseWriter, _ *http.Request) {
+			w.WriteHeader(http.StatusOK)
+			_, _ = io.WriteString(w, `<html><body id="mieleLoginSite">
+<h1 class="center mediumFont">Grant access</h1>
+<form class="hidden" method="get" action="/v1/">
+<input type="hidden" name="code" value="DE_3a2efb6d1ccf68efc9fef07d1869ce62">
+<input type="hidden" name="state" value="login">
+<input id="button" class="waves-effect waves-light btn miele-red" type="submit"
+value="ALLOW">
+</form>
+<form class="hidden" method="get" action="/v1/">
+<input type="hidden" name="error" value="access_denied">
+<input id="button" class="waves-effect waves-light btn miele-gray" type="submit"
+value="DENY">
+</form>
+</body></html>`)
+		},
+	})
+	code, err := lc.FetchCode(context.Background(), config.MieleConfig{})
+	if err != nil {
+		t.Fatalf("FetchCode: %v", err)
+	}
+	if code != "DE_3a2efb6d1ccf68efc9fef07d1869ce62" {
+		t.Errorf("code = %q", code)
+	}
+}
+
+func TestFetchCode_OKWithoutCode(t *testing.T) {
+	_, lc, _ := stubMiele(t, struct {
+		code    http.HandlerFunc
+		token   http.HandlerFunc
+		devices http.HandlerFunc
+	}{
+		code: func(w http.ResponseWriter, _ *http.Request) {
+			w.WriteHeader(http.StatusOK)
+			_, _ = io.WriteString(w, `<html><body>Invalid credentials</body></html>`)
+		},
+	})
+	if _, err := lc.FetchCode(context.Background(), config.MieleConfig{}); err == nil {
+		t.Fatal("expected error for 200 without code")
+	}
+}
+
 func TestFetchToken_Success(t *testing.T) {
 	_, lc, _ := stubMiele(t, struct {
 		code    http.HandlerFunc
@@ -172,9 +221,72 @@ func TestConvert(t *testing.T) {
 	if !tok.ExpiresAt.Equal(want) {
 		t.Errorf("ExpiresAt = %v, want %v", tok.ExpiresAt, want)
 	}
+	if !tok.RefreshExpiresAt.IsZero() {
+		t.Errorf("RefreshExpiresAt = %v, want zero without refresh_expires_in", tok.RefreshExpiresAt)
+	}
+
+	tok = Convert(TokenResult{AccessToken: "a", RefreshToken: "r", ExpiresIn: 3600, RefreshExpiresIn: 2592000}, now)
+	if want := now.Add(30 * 24 * time.Hour); !tok.RefreshExpiresAt.Equal(want) {
+		t.Errorf("RefreshExpiresAt = %v, want %v", tok.RefreshExpiresAt, want)
+	}
 }
 
-func TestNeedsRefresh(t *testing.T) {
+func TestRecoverFromConfig_WithRefreshValidUntil(t *testing.T) {
+	m := NewManager()
+	m.RecoverFromConfig(config.Config{
+		Miele: config.MieleConfig{
+			Token: &config.TokenConfig{
+				Access:            "a",
+				Refresh:           "r",
+				ValidUntil:        "2030-01-01T00:00:00Z",
+				RefreshValidUntil: "2030-01-31T00:00:00Z",
+			},
+		},
+	})
+	want, _ := time.Parse(time.RFC3339, "2030-01-31T00:00:00Z")
+	if tok := m.Current(); tok == nil || !tok.RefreshExpiresAt.Equal(want) {
+		t.Fatalf("RefreshExpiresAt not recovered: %+v", tok)
+	}
+}
+
+func TestLogin_PersistsRefreshValidUntil(t *testing.T) {
+	_, lc, apiC := stubMiele(t, struct {
+		code    http.HandlerFunc
+		token   http.HandlerFunc
+		devices http.HandlerFunc
+	}{
+		code: func(w http.ResponseWriter, _ *http.Request) {
+			w.Header().Set("Location", "/v1/?code=C")
+			w.WriteHeader(http.StatusFound)
+		},
+		token: func(w http.ResponseWriter, _ *http.Request) {
+			w.Write([]byte(`{"access_token":"a","refresh_token":"r","token_type":"Bearer","expires_in":3600,"refresh_expires_in":2592000}`))
+		},
+	})
+
+	p := filepath.Join(t.TempDir(), "config.json")
+	os.WriteFile(p, []byte(`{
+        "mqtt": {"url": "tcp://x", "topic": "miele"},
+        "miele": {"client-id": "cid", "client-secret": "csec", "username": "u", "password": "p", "persistToken": true}
+    }`), 0o600)
+	if _, err := config.LoadConfig(p); err != nil {
+		t.Fatalf("LoadConfig: %v", err)
+	}
+
+	m := NewManager()
+	m.SetClients(lc, apiC)
+	m.SetNowFunc(func() time.Time { return time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC) })
+	if _, err := m.Login(context.Background()); err != nil {
+		t.Fatalf("Login: %v", err)
+	}
+
+	tok := config.Get().Miele.Token
+	if tok == nil || tok.ValidUntil != "2026-01-01T01:00:00Z" || tok.RefreshValidUntil != "2026-01-31T00:00:00Z" {
+		t.Errorf("persisted token = %+v", tok)
+	}
+}
+
+func TestNeedsRefresh_LegacyToken(t *testing.T) {
 	now := time.Date(2026, 1, 1, 12, 0, 0, 0, time.UTC)
 	cases := []struct {
 		name   string
@@ -188,7 +300,7 @@ func TestNeedsRefresh(t *testing.T) {
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			tok := &Token{ExpiresAt: now.Add(c.expiry)}
+			tok := &Token{AccessToken: legacyOld, ExpiresAt: now.Add(c.expiry)}
 			if got := NeedsRefresh(tok, now); got != c.want {
 				t.Errorf("NeedsRefresh = %v, want %v", got, c.want)
 			}
@@ -332,7 +444,7 @@ func TestLogin_RefreshPath(t *testing.T) {
 	m.SetClients(lc, apiC)
 	m.SetNowFunc(func() time.Time { return now })
 	// Token that expires in 12h => needs refresh.
-	m.SetToken(&Token{AccessToken: "old-a", RefreshToken: "old-r", ExpiresAt: now.Add(12 * time.Hour)})
+	m.SetToken(&Token{AccessToken: legacyOld, RefreshToken: "old-r", ExpiresAt: now.Add(12 * time.Hour)})
 
 	tok, err := m.Login(context.Background())
 	if err != nil {
@@ -349,6 +461,51 @@ func TestLogin_RefreshPath(t *testing.T) {
 	}
 	if devicesCalls != 1 {
 		t.Errorf("devicesCalls = %d, want 1 (assert connection)", devicesCalls)
+	}
+}
+
+func TestLogin_RefreshWithoutNewRefreshToken_KeepsPrevious(t *testing.T) {
+	now := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
+	_, lc, apiC := stubMiele(t, struct {
+		code    http.HandlerFunc
+		token   http.HandlerFunc
+		devices http.HandlerFunc
+	}{
+		token: func(w http.ResponseWriter, _ *http.Request) {
+			w.Write([]byte(`{"access_token":"new-a","token_type":"Bearer","expires_in":3600}`))
+		},
+		devices: func(w http.ResponseWriter, _ *http.Request) {
+			w.Write([]byte(`{}`))
+		},
+	})
+
+	p := filepath.Join(t.TempDir(), "config.json")
+	os.WriteFile(p, []byte(`{
+        "mqtt": {"url": "tcp://x", "topic": "miele"},
+        "miele": {"client-id": "cid", "client-secret": "csec", "persistToken": false}
+    }`), 0o600)
+	if _, err := config.LoadConfig(p); err != nil {
+		t.Fatalf("LoadConfig: %v", err)
+	}
+
+	m := NewManager()
+	m.SetClients(lc, apiC)
+	m.SetNowFunc(func() time.Time { return now })
+	refreshExp := now.Add(30 * 24 * time.Hour)
+	m.SetToken(&Token{AccessToken: legacyOld, RefreshToken: "old-r", ExpiresAt: now.Add(12 * time.Hour), RefreshExpiresAt: refreshExp})
+
+	tok, err := m.Login(context.Background())
+	if err != nil {
+		t.Fatalf("Login: %v", err)
+	}
+	if tok.AccessToken != "new-a" {
+		t.Errorf("AccessToken = %q, want new-a", tok.AccessToken)
+	}
+	if tok.RefreshToken != "old-r" {
+		t.Errorf("RefreshToken = %q, want old-r", tok.RefreshToken)
+	}
+	if !tok.RefreshExpiresAt.Equal(refreshExp) {
+		t.Errorf("RefreshExpiresAt = %v, want %v", tok.RefreshExpiresAt, refreshExp)
 	}
 }
 
@@ -386,7 +543,7 @@ func TestLogin_RefreshFailure_FallsBackToFullLogin(t *testing.T) {
 	p := filepath.Join(tmp, "config.json")
 	os.WriteFile(p, []byte(`{
         "mqtt": {"url": "tcp://x", "topic": "miele"},
-        "miele": {"client-id": "cid", "client-secret": "csec", "persistToken": false}
+        "miele": {"client-id": "cid", "client-secret": "csec", "username": "u", "password": "p", "persistToken": false}
     }`), 0o600)
 	if _, err := config.LoadConfig(p); err != nil {
 		t.Fatalf("LoadConfig: %v", err)
@@ -395,7 +552,7 @@ func TestLogin_RefreshFailure_FallsBackToFullLogin(t *testing.T) {
 	m := NewManager()
 	m.SetClients(lc, apiC)
 	m.SetNowFunc(func() time.Time { return now })
-	m.SetToken(&Token{AccessToken: "old-a", RefreshToken: "old-r", ExpiresAt: now.Add(12 * time.Hour)})
+	m.SetToken(&Token{AccessToken: legacyOld, RefreshToken: "old-r", ExpiresAt: now.Add(12 * time.Hour)})
 
 	tok, err := m.Login(context.Background())
 	if err != nil {
